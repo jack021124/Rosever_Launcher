@@ -1,0 +1,73 @@
+import { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { TitleBar } from '@/components/TitleBar';
+import { TargetSwitcher } from '@/components/TargetSwitcher';
+import { SideNav } from '@/components/SideNav';
+import { useServiceEvents } from '@/hooks/useServiceEvents';
+import { useAppStore, mapTargetStatus } from '@/store/appStore';
+import { SetupGuide } from '@/components/SetupGuide';
+import { ServiceControl } from '@/pages/ServiceControl';
+import { Config } from '@/pages/Config';
+import { Database } from '@/pages/Database';
+import { Logs } from '@/pages/Logs';
+import { Servers } from '@/pages/Servers';
+import { DataTools, MapTools } from '@/pages/Tools';
+
+export default function App() {
+  // 订阅进程事件 → zustand
+  useServiceEvents();
+
+  const target = useAppStore((s) => s.target);
+  const serverRootReady = useAppStore((s) => s.serverRootReady);
+  const loadServerRoot = useAppStore((s) => s.loadServerRoot);
+  const setConnState = useAppStore((s) => s.setConnState);
+  const isRemote = target.kind === 'remote';
+
+  // 启动时加载本地 serverRoot
+  useEffect(() => {
+    loadServerRoot();
+  }, [loadServerRoot]);
+
+  // 订阅远程连接状态推送 → 更新 store
+  useEffect(() => {
+    const off = window.rosever.onTargetStatus((s) => {
+      setConnState(mapTargetStatus(s.state), 'detail' in s ? s.detail : undefined);
+    });
+    return () => {
+      off();
+    };
+  }, [setConnState]);
+
+  // target 切回本地时重新加载本地 serverRoot（远程模式下远程 serverRoot 由 Agent 提供）
+  useEffect(() => {
+    if (!isRemote) loadServerRoot();
+  }, [isRemote, loadServerRoot]);
+
+  // 远程模式下放行 routes（无需本地 serverRoot）；本地模式仍要求配置好目录
+  const ready = serverRootReady || isRemote;
+
+  return (
+    <div className="h-full flex flex-col">
+      <TitleBar />
+      <TargetSwitcher />
+      <div className="flex-1 flex overflow-hidden">
+        <SideNav />
+        <main className="flex-1 overflow-hidden bg-bg-base">
+          {ready ? (
+            <Routes>
+              <Route path="/" element={<ServiceControl />} />
+              <Route path="/config" element={<Config />} />
+              <Route path="/database" element={<Database />} />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/servers" element={<Servers />} />
+              <Route path="/tools/data" element={<DataTools />} />
+              <Route path="/tools/map" element={<MapTools />} />
+            </Routes>
+          ) : (
+            <SetupGuide />
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}

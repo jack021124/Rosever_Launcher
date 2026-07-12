@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-electron/
+out/
+packages/*/dist/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Env
+.env
+.env.local
+
+# Electron build artifacts
+release/
+
+# Agent 部署配置（含真实 token，只提交 .example 模板）
+apps/agent/agent.json
+
+# ZCode 会话/计划缓存
+.zcode/
+
+# 备份
+*.backup
+.backup/

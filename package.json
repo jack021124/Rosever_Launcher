@@ -1,0 +1,22 @@
+{
+  "name": "rosever",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rosever - RO (BetterRA/rAthena) 服务端启动器与远程管理工具",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace @rosever/shared",
+    "predev": "npm run build:shared",
+    "dev": "npm run dev --workspace @rosever/launcher",
+    "prebuild": "npm run build:shared",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "port": 7890,
+  "token": "请改成你自己的长随机串_例如_a8f3k2j9d7",
+  "serverRoot": "C:/BetterRA_Done_Dev",
+  "tlsCert": "",
+  "tlsKey": "",
+  "allowedIps": []
+}

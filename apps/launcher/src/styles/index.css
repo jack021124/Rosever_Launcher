@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    @apply bg-bg-base text-text-primary font-sans antialiased;
+    /* 禁用文本选择，桌面应用风格 */
+    -webkit-user-select: none;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  /* 允许输入框、代码区域选择文本 */
+  input,
+  textarea,
+  [contenteditable],
+  .selectable {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-strong rounded;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent-dim;
+  }
+}
+
+@layer components {
+  /* 通用按钮 */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium
+           transition-colors duration-150 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-white hover:bg-accent-hover;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-text-secondary hover:bg-bg-hover hover:text-text-primary;
+  }
+  .btn-outline {
+    @apply btn border border-border text-text-primary hover:bg-bg-hover;
+  }
+
+  /* 输入框 */
+  .input {
+    @apply bg-bg-input border border-border rounded px-3 py-1.5 text-sm text-text-primary
+           placeholder:text-text-muted outline-none transition-colors
+           focus:border-accent focus:ring-1 focus:ring-accent/40;
+  }
+
+  /* 卡片 */
+  .card {
+    @apply bg-bg-panel rounded border border-border;
+  }
+
+  /* 页面标题区 */
+  .page-header {
+    @apply flex items-center justify-between pb-4 border-b border-border;
+  }
+}
+
+/* ============================================
+   CodeEditor —— conf 高亮编辑器
+   overlay 布局：底层 <pre> 着色，上层 textarea 透明
+   两者必须逐字对齐，所以共用同一组排版参数
+   ============================================ */
+.ce-layer,
+.ce-input {
+  /* 排版参数 —— 两层必须完全一致才能对齐 */
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  border: 0;
+  tab-size: 4;
+  letter-spacing: 0;
+  word-spacing: 0;
+  white-space: pre;
+  /* 文本不换行，水平滚动（conf 行较长） */
+}
+
+/* 底层高亮：背景透明，文字由各 span 着色 */
+.ce-layer {
+  color: #e8e8f0; /* 默认前景（普通文本值，已经较亮） */
+  background: transparent;
+}
+
+/* 上层 textarea：文字透明，只保留光标和选区 */
+.ce-input {
+  color: transparent;
+  caret-color: #8a2be2; /* 紫色光标，呼应主题 */
+  background: transparent;
+  resize: none;
+}
+.ce-input::placeholder {
+  color: #6b6b85;
+}
+.ce-input::selection {
+  background: rgba(138, 43, 226, 0.3); /* 半透明紫选区 */
+}
+
+/* —— 高亮 token 配色 —— */
+.ce-key {
+  color: #c792ea; /* 键名：浅紫 */
+  font-weight: 500;
+}
+.ce-colon {
+  color: #9a9ab5; /* 冒号：浅灰（提亮，原 #6b6b85 太暗） */
+}
+.ce-number {
+  color: #82aaff; /* 数值：蓝 */
+}
+.ce-bool {
+  color: #c3e88d; /* yes/no/on/off：绿 */
+}
+.ce-string {
+  color: #c3e88d; /* 字符串：绿 */
+}
+.ce-comment {
+  color: #9696b0; /* 注释：提亮到接近 text-secondary，保证可读 */
+  /* 不用斜体 —— 中文小字号斜体反而难读 */
+}
+.ce-sep {
+  color: #6a6a8a; /* 分隔线 ==== ----：略暗于注释 */
+}
+.ce-import {
+  color: #f78c6c; /* import 指令：橙 */
+}
