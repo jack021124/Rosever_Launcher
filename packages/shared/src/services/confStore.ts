@@ -321,6 +321,14 @@ interface ParsedLine {
 /**
  * 解析单行 conf，识别 `key: value` 或 `//key: value`（被注释禁用）。
  * 返回 null 表示该行不是配置项（注释、空行、标题分隔线等）。
+ *
+ * 重要：key 必须以**小写字母**开头且至少 2 个字符。
+ * rAthena/BetterRA 的所有配置项 key 都是小写蛇形命名（server_name、login_port…），
+ * 从未出现过单字母或大写字母开头的 key。
+ * 不能放宽到 [\w.]+ 或 [a-zA-Z_]，因为 conf 注释里大量出现：
+ *   - `0: 没有限制`、`1: 使用邮件验证`（枚举说明，数字开头）
+ *   - `X: 若是其他非0的数字…`（占位符说明，大写单字母）
+ * 这些都不是配置项，必须跳过。
  */
 function parseKeyValueLine(line: string): ParsedLine | null {
   const trimmed = line.trim();
@@ -335,8 +343,8 @@ function parseKeyValueLine(line: string): ParsedLine | null {
     rest = rest.slice(2).trimStart();
     // 禁用行里如果是普通注释（// 后面没有冒号），跳过
   }
-  // 匹配 key: value（冒号分隔，key 是合法标识符）
-  const m = rest.match(/^([\w.]+)\s*:\s*(.*)$/);
+  // 匹配 key: value（冒号分隔，key 以小写字母开头，至少 2 字符）
+  const m = rest.match(/^([a-z][a-z0-9_.]+)\s*:\s*(.*)$/);
   if (!m) return null;
   return { key: m[1], value: m[2].trim(), disabled };
 }
