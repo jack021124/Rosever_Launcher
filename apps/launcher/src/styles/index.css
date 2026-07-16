@@ -167,9 +167,13 @@
 }
 
 /* —— 高亮 token 配色（变量是 RGB 三元组，需 rgb() 包裹） —— */
+/* 注意：ce-layer 和 ce-input（textarea）共享字体度量。
+   高亮 token 绝不能改变 font-weight / font-style / letter-spacing，
+   否则两层字符宽度不一致，光标位置会和可见文字错位
+   （如 userid: s1 里 key 加粗后，光标在 s 后退格会删到 s 前面的字符）。
+   只改颜色，不改字形。 */
 .ce-key {
   color: rgb(var(--ce-key));
-  font-weight: 500;
 }
 .ce-colon {
   color: rgb(var(--ce-colon));
