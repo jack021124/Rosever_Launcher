@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, readdir
 import { join, dirname, basename, relative } from 'node:path';
 import * as iconv from 'iconv-lite';
 import { parseConf, writeConf } from './confParser.js';
+import { toImportPath } from '../types.js';
 import type { ConfFile } from '../types.js';
 
 /**
@@ -146,4 +147,250 @@ export class ConfStore {
     writeFileSync(abs, iconv.encode(header, CONF_ENCODING));
     return relPath;
   }
+
+  // ==================== 安全覆盖模式（import/ override）====================
+
+  /**
+   * 读取 import 覆盖文件里属于该 conf 的段落。
+   * - battle 类（conf/battle/*.conf）：从 battle_conf.txt 提取 `// battle/xxx.conf` 分区
+   * - 非 battle 类：整个 import 文件内容
+   * import 文件不存在时返回空字符串。
+   */
+  readImport(relPath: string): string {
+    const importPath = toImportPath(relPath);
+    if (!importPath) return '';
+    const importAbs = join(this.opts.serverRoot, importPath);
+    if (!existsSync(importAbs)) return '';
+    const importText = iconv.decode(readFileSync(importAbs), CONF_ENCODING);
+
+    // battle 类：提取分区
+    if (importPath.endsWith('battle_conf.txt')) {
+      return this.extractBattleSection(importText, relPath);
+    }
+    return importText;
+  }
+
+  /**
+   * 合并原文件 + import 覆盖，返回最终生效值。
+   * 用户在「安全覆盖」模式下看到的就是这个合并结果。
+   *
+   * 合并逻辑：逐行扫描原文件，如果某行的 key 在 import 覆盖项里，替换其 value；
+   * import 里有但原文件没有的 key 追加到末尾。
+   */
+  readMerged(relPath: string): { mergedText: string; originalText: string } {
+    const originalText = this.readText(relPath);
+    const overrideText = this.readImport(relPath);
+
+    // 没有覆盖项，直接返回原文
+    if (!overrideText.trim()) {
+      return { mergedText: originalText, originalText };
+    }
+
+    const overrides = parseKeyValues(overrideText);
+    const origLines = originalText.replace(/\r\n/g, '\n').split('\n');
+    const mergedLines = origLines.map((line) => {
+      const parsed = parseKeyValueLine(line);
+      if (parsed && overrides.has(parsed.key)) {
+        // 用覆盖值替换，保留原行的 disabled 状态和 key
+        return `${parsed.disabled ? '//' : ''}${parsed.key}: ${overrides.get(parsed.key)}`;
+      }
+      return line;
+    });
+
+    // 追加原文件里没有的 key（用户新增的）
+    const origKeys = new Set<string>();
+    for (const line of origLines) {
+      const p = parseKeyValueLine(line);
+      if (p) origKeys.add(p.key);
+    }
+    const appended: string[] = [];
+    for (const [key, value] of overrides) {
+      if (!origKeys.has(key)) {
+        appended.push(`${key}: ${value}`);
+      }
+    }
+    if (appended.length > 0) {
+      mergedLines.push('', '// 以下为覆盖文件追加的项', ...appended);
+    }
+
+    return { mergedText: mergedLines.join('\n'), originalText };
+  }
+
+  /**
+   * 安全覆盖模式保存：把用户编辑后的文本与原文件 diff，
+   * 只把改过的行写入 import 覆盖文件。
+   * @returns 备份文件相对路径
+   */
+  saveImport(relPath: string, editedText: string): string {
+    const importPath = toImportPath(relPath);
+    if (!importPath) {
+      throw new Error('该文件不支持安全覆盖');
+    }
+    const originalText = this.readText(relPath);
+    const origMap = new Map<string, string>();
+    for (const line of originalText.replace(/\r\n/g, '\n').split('\n')) {
+      const p = parseKeyValueLine(line);
+      if (p) origMap.set(p.key, p.value);
+    }
+
+    // 提取 diff：用户新值 ≠ 原值的，或原文件里没有的新 key
+    const diff: string[] = [];
+    for (const line of editedText.replace(/\r\n/g, '\n').split('\n')) {
+      const p = parseKeyValueLine(line);
+      if (!p) continue; // 注释、空行、标题行不写
+      const origVal = origMap.get(p.key);
+      if (origVal === undefined || origVal !== p.value) {
+        diff.push(`${p.key}: ${p.value}`);
+      }
+    }
+
+    const importAbs = join(this.opts.serverRoot, importPath);
+
+    // battle 类：更新 battle_conf.txt 里该文件的分区，保留其他分区
+    if (importPath.endsWith('battle_conf.txt')) {
+      const section = this.formatBattleSection(relPath, diff);
+      const existing = existsSync(importAbs) ? iconv.decode(readFileSync(importAbs), CONF_ENCODING) : '';
+      const updated = replaceBattleSection(existing, relPath, section);
+      const backupRel = this.backupIfExists(importPath);
+      this.atomicWrite(importAbs, updated);
+      return backupRel;
+    }
+
+    // 非 battle 类：diff 整体写入 import 文件
+    const backupRel = this.backupIfExists(importPath);
+    this.atomicWrite(importAbs, diff.join('\r\n') + (diff.length > 0 ? '\r\n' : ''));
+    return backupRel;
+  }
+
+  /** 从 battle_conf.txt 全文里提取属于 relPath 的分区内容 */
+  private extractBattleSection(battleConfText: string, relPath: string): string {
+    const header = `// ${relPath}`;
+    const lines = battleConfText.replace(/\r\n/g, '\n').split('\n');
+    let inSection = false;
+    const result: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith('// conf/battle/') || line.startsWith('// battle/')) {
+        // 遇到下一个分区头
+        if (inSection) break;
+        if (line.trim() === header || line.trim() === `// ${relPath.replace('conf/', '')}`) {
+          inSection = true;
+        }
+        continue;
+      }
+      if (inSection) {
+        result.push(line);
+      }
+    }
+    return result.join('\n').trim();
+  }
+
+  /** 生成 battle_conf.txt 里一个分区的文本（含分区头） */
+  private formatBattleSection(relPath: string, diffLines: string[]): string {
+    // 分区头用去掉 conf/ 前缀的路径（battle/exp.conf），和 rAthena 惯例一致
+    const header = relPath.replace(/^conf\//, '');
+    const body = diffLines.length > 0 ? diffLines.join('\r\n') + '\r\n' : '';
+    return `// ${header}\r\n${body}`;
+  }
+
+  /** 备份（文件存在才备份，不存在返回空串）。用于 import 文件写入前 */
+  private backupIfExists(relPath: string): string {
+    const abs = join(this.opts.serverRoot, relPath);
+    if (!existsSync(abs)) return '';
+    return this.backup(relPath);
+  }
+
+  /** 原子写入（GBK 编码 + 临时文件 rename） */
+  private atomicWrite(abs: string, text: string): void {
+    const dir = dirname(abs);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const tmp = abs + '.rosever-tmp';
+    writeFileSync(tmp, iconv.encode(text, CONF_ENCODING));
+    renameSync(tmp, abs);
+  }
+}
+
+// ==================== conf 行解析工具函数 ====================
+
+/** 一行的解析结果：key/value/disabled */
+interface ParsedLine {
+  key: string;
+  value: string;
+  disabled: boolean;
+}
+
+/**
+ * 解析单行 conf，识别 `key: value` 或 `//key: value`（被注释禁用）。
+ * 返回 null 表示该行不是配置项（注释、空行、标题分隔线等）。
+ */
+function parseKeyValueLine(line: string): ParsedLine | null {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+  // 标题分隔线（//==== 或 //-----）
+  if (/^\/\/[=\-]{3,}/.test(trimmed)) return null;
+  let disabled = false;
+  let rest = trimmed;
+  // 行首 // 表示禁用
+  if (rest.startsWith('//')) {
+    disabled = true;
+    rest = rest.slice(2).trimStart();
+    // 禁用行里如果是普通注释（// 后面没有冒号），跳过
+  }
+  // 匹配 key: value（冒号分隔，key 是合法标识符）
+  const m = rest.match(/^([\w.]+)\s*:\s*(.*)$/);
+  if (!m) return null;
+  return { key: m[1], value: m[2].trim(), disabled };
+}
+
+/**
+ * 从整段文本里解析出所有 key→value 映射（后出现的覆盖先出现的）。
+ * 用于 import 覆盖项。
+ */
+function parseKeyValues(text: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const line of text.replace(/\r\n/g, '\n').split('\n')) {
+    const p = parseKeyValueLine(line);
+    if (p) map.set(p.key, p.value);
+  }
+  return map;
+}
+
+/**
+ * 在 battle_conf.txt 全文里替换属于 relPath 的分区。
+ * 其他文件的分区保持不动。relPath 不存在则追加到末尾。
+ */
+function replaceBattleSection(battleConfText: string, relPath: string, newSection: string): string {
+  const header = relPath.replace(/^conf\//, ''); // 如 battle/exp.conf
+  const headerMarker = `// ${header}`;
+  const lines = battleConfText.replace(/\r\n/g, '\n').split('\n');
+  const out: string[] = [];
+  let i = 0;
+  let replaced = false;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    // 匹配分区头：// battle/xxx.conf 或 // conf/battle/xxx.conf
+    if (line.trim() === headerMarker || line.trim() === `// conf/${header}`) {
+      // 跳过整个旧分区（到下一个分区头或文件末尾）
+      i++;
+      while (i < lines.length) {
+        const next = lines[i].trim();
+        if (next.startsWith('// battle/') || next.startsWith('// conf/battle/')) break;
+        i++;
+      }
+      // 插入新分区
+      out.push(newSection.replace(/\r\n/g, '\n').trimEnd());
+      replaced = true;
+      continue;
+    }
+    out.push(line);
+    i++;
+  }
+
+  // 没找到旧分区 → 追加
+  if (!replaced && newSection.trim()) {
+    if (out.length > 0 && out[out.length - 1] !== '') out.push('');
+    out.push(newSection.replace(/\r\n/g, '\n').trimEnd());
+  }
+
+  return out.join('\r\n');
 }

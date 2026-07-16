@@ -90,6 +90,12 @@ const api = {
   /** 新建 conf 文件（已存在则返回错误，不覆盖） */
   createConf: (relPath: string) =>
     ipcRenderer.invoke('conf:create', relPath) as Promise<{ ok: boolean; path?: string; error?: string }>,
+  /** 安全覆盖模式：读取合并后的生效值（原文件 + import 覆盖） */
+  readConfMerged: (relPath: string) =>
+    ipcRenderer.invoke('conf:readMerged', relPath) as Promise<{ mergedText: string; originalText: string } | { error: string }>,
+  /** 安全覆盖模式：只把 diff 写入 import 覆盖文件 */
+  saveConfImport: (relPath: string, editedText: string) =>
+    ipcRenderer.invoke('conf:saveImport', relPath, editedText) as Promise<{ ok: boolean; backup?: string; error?: string }>,
 
   // 数据库
   getDbConfig: () => ipcRenderer.invoke('db:getConfig') as Promise<MysqlConfig>,

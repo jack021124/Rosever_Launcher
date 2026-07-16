@@ -588,6 +588,25 @@ ipcMain.handle('conf:create', routed('conf:create', async (relPath: string): Pro
   }
 }));
 
+/** 安全覆盖模式：读取合并后的生效值（原文件 + import 覆盖） */
+ipcMain.handle('conf:readMerged', routed('conf:readMerged', async (relPath: string): Promise<{ mergedText: string; originalText: string } | { error: string }> => {
+  try {
+    return getConfStore().readMerged(relPath);
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+}));
+
+/** 安全覆盖模式：只把 diff 写入 import 覆盖文件，原文件不动 */
+ipcMain.handle('conf:saveImport', routed('conf:saveImport', async (relPath: string, editedText: string): Promise<{ ok: boolean; backup?: string; error?: string }> => {
+  try {
+    const backup = getConfStore().saveImport(relPath, editedText);
+    return { ok: true, backup };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}));
+
 // ---- IPC：数据库 ----
 
 /** 读取 inter_athena.conf 里的 MySQL 配置（远程时用 Agent 回传的缓存） */

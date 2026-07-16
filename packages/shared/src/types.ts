@@ -234,3 +234,53 @@ export function npcScriptLabel(fileName: string): string {
   const base = fileName.replace(/\.conf$/i, '');
   return NPC_SCRIPT_LABELS[base] ?? base;
 }
+
+// ---- conf → import/ 覆盖映射 ----
+
+/**
+ * 把原 conf 路径映射成 import/ 覆盖文件路径。
+ * 返回 null 表示该文件不支持安全覆盖（没有 import 目标）。
+ *
+ * 规则（来自 conf/readme.md）：
+ *   - conf/*_athena.conf  → conf/import/*_conf.txt   （login/char/map/inter/log/packet/script/web）
+ *   - conf/battle/*.conf  → conf/import/battle_conf.txt  （全部 battle 文件聚合到一个）
+ *   - conf/*.yml          → conf/import/*.yml         （保持原名，groups/atcommands/inter_server）
+ *   - 其余                → null
+ *
+ * @param relPath 相对 serverRoot，如 'conf/login_athena.conf' 或 'conf/battle/exp.conf'
+ */
+export function toImportPath(relPath: string): string | null {
+  const norm = relPath.replace(/\\/g, '/');
+
+  // battle 目录下所有 .conf → battle_conf.txt
+  if (norm.startsWith('conf/battle/') && norm.endsWith('.conf')) {
+    return 'conf/import/battle_conf.txt';
+  }
+
+  // *_athena.conf → *_conf.txt
+  const athenaMatch = norm.match(/^conf\/(\w+)_athena\.conf$/);
+  if (athenaMatch) {
+    const name = athenaMatch[1];
+    // maps_athena.conf 等没有对应 import 文件 —— 只有 readme 明确列出的才有
+    const KNOWN_ATHENA = ['login', 'char', 'map', 'inter', 'log', 'packet', 'script', 'web'];
+    if (KNOWN_ATHENA.includes(name)) {
+      return `conf/import/${name}_conf.txt`;
+    }
+    return null;
+  }
+
+  // *.yml → import/*.yml（保持原名）
+  if (norm.startsWith('conf/') && norm.endsWith('.yml')) {
+    return `conf/import/${norm.slice('conf/'.length)}`;
+  }
+
+  return null;
+}
+
+/**
+ * 判断某 conf 文件是否支持安全覆盖（即有没有 import 目标）。
+ */
+export function supportsImport(relPath: string): boolean {
+  return toImportPath(relPath) !== null;
+}
+
