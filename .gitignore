@@ -29,6 +29,9 @@ Thumbs.db
 release/
 release*/
 
+# 图标原图（只提交 build/icon.png，不提交高清源文件）
+build/icon-source.png
+
 
 # Agent 部署配置（含真实 token，只提交 .example 模板）
 apps/agent/agent.json
