@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import appIcon from '../assets/icon.png';
 
 /**
  * 自定义标题栏（无边框窗口用，ZCode 风格）。
@@ -36,9 +37,7 @@ export function TitleBar() {
     >
       {/* 左侧：logo + 名称 */}
       <div className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded bg-accent flex items-center justify-center text-white text-[10px] font-bold">
-          渡
-        </div>
+        <img src={appIcon} alt="渡鸦" className="w-5 h-5 rounded" draggable={false} />
         <span className="text-xs font-semibold text-text-primary">渡鸦</span>
         {version && <span className="text-[10px] text-text-muted ml-1">v{version}</span>}
       </div>
