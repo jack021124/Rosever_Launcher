@@ -8,8 +8,11 @@ import { useState, useEffect } from 'react';
  */
 export function TitleBar() {
   const [maximized, setMaximized] = useState(false);
+  const [version, setVersion] = useState('');
 
   useEffect(() => {
+    // 读取版本号（来自 package.json，app.getVersion()）
+    window.rosever.getVersion().then((v) => setVersion(v));
     // 初始查询一次
     window.rosever.winIsMaximized().then(setMaximized);
     // 订阅最大化状态变化（拖窗口到顶部最大化等系统操作）
@@ -37,7 +40,7 @@ export function TitleBar() {
           渡
         </div>
         <span className="text-xs font-semibold text-text-primary">渡鸦</span>
-        <span className="text-[10px] text-text-muted ml-1">v0.1.0</span>
+        {version && <span className="text-[10px] text-text-muted ml-1">v{version}</span>}
       </div>
 
       {/* 右侧：窗口控制按钮（不参与拖动） */}
