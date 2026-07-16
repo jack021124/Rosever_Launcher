@@ -34,9 +34,9 @@ export function TitleBar() {
       {/* 左侧：logo + 名称 */}
       <div className="flex items-center gap-2">
         <div className="w-5 h-5 rounded bg-accent flex items-center justify-center text-white text-[10px] font-bold">
-          R
+          渡
         </div>
-        <span className="text-xs font-semibold text-text-primary">Rosever Launcher</span>
+        <span className="text-xs font-semibold text-text-primary">渡鸦</span>
         <span className="text-[10px] text-text-muted ml-1">v0.1.0</span>
       </div>
 

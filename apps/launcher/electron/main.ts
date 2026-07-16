@@ -337,7 +337,7 @@ function createWindow(): void {
     minHeight: 640,
     show: false,
     autoHideMenuBar: true,
-    title: 'Rosever Launcher',
+    title: '渡鸦',
     backgroundColor: '#1E1E2E',
     // 无边框窗口（ZCode 风格）：去掉原生标题栏，窗口控制按钮由自定义 TitleBar 提供
     frame: false,

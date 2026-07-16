@@ -13,7 +13,7 @@
   },
   "build": {
     "appId": "com.rosever.launcher",
-    "productName": "Rosever Launcher",
+    "productName": "渡鸦",
     "directories": {
       "output": "release4"
     },
@@ -30,7 +30,7 @@
       ]
     },
     "portable": {
-      "artifactName": "Rosever-Launcher-${version}-portable.exe"
+      "artifactName": "渡鸦-${version}-portable.exe"
     }
   },
   "dependencies": {
