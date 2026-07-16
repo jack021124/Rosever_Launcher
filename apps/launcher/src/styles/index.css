@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+   主题 CSS 变量
+   全部由 JS 动态设置（见 themes.ts + appStore.applyTheme），
+   根据用户选择的主题把变量写到 <html> 的 style 上。
+   这里只保留 :root 兜底默认值（dark-purple），避免 JS 执行前无色闪烁。
+   ============================================ */
+:root {
+  --bg-base: 30 30 46;
+  --bg-panel: 37 37 53;
+  --bg-hover: 45 45 64;
+  --bg-active: 51 51 74;
+  --bg-input: 24 24 40;
+  --accent: 138 43 226;
+  --accent-hover: 157 68 232;
+  --accent-dim: 107 31 184;
+  --text-primary: 255 255 255;
+  --text-secondary: 160 160 184;
+  --text-muted: 107 107 133;
+  --status-running: 74 222 128;
+  --status-stopped: 107 107 133;
+  --status-crashed: 239 68 68;
+  --status-warning: 251 191 36;
+  --border: 54 54 80;
+  --border-strong: 74 74 106;
+  --ce-text: 232 232 240;
+  --ce-key: 199 146 234;
+  --ce-colon: 154 154 181;
+  --ce-number: 130 170 255;
+  --ce-bool: 195 232 141;
+  --ce-string: 195 232 141;
+  --ce-comment: 150 150 176;
+  --ce-sep: 106 106 138;
+  --ce-import: 247 140 108;
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -12,6 +47,12 @@
   #root {
     height: 100%;
     margin: 0;
+  }
+
+  /* html 的 font-size 决定 rem 单位基准。tailwind 的 text-xs/sm 等都用 rem，
+     所以设这里 = 全局缩放所有字号。applyTheme 会覆盖 --font-size-base。 */
+  html {
+    font-size: var(--font-size-base, 14px);
   }
 
   body {
@@ -85,66 +126,69 @@
    CodeEditor —— conf 高亮编辑器
    overlay 布局：底层 <pre> 着色，上层 textarea 透明
    两者必须逐字对齐，所以共用同一组排版参数
+   关键：pre 用 overflow:hidden，完全由 JS 同步 scrollTop/Left，
+   不让它自己滚动，避免两层滚动惯性不一致
    ============================================ */
 .ce-layer,
 .ce-input {
   /* 排版参数 —— 两层必须完全一致才能对齐 */
-  font-family: 'Cascadia Code', 'Consolas', monospace;
-  font-size: 12px;
-  line-height: 1.6;
+  font-family: var(--font-mono, 'Cascadia Code'), 'Consolas', monospace;
+  font-size: var(--ce-font-size, 12px);
+  line-height: var(--ce-line-height, 1.6);
   padding: 12px;
   border: 0;
   tab-size: 4;
   letter-spacing: 0;
   word-spacing: 0;
   white-space: pre;
-  /* 文本不换行，水平滚动（conf 行较长） */
+  box-sizing: border-box;
 }
 
-/* 底层高亮：背景透明，文字由各 span 着色 */
+/* 底层高亮：overflow:hidden，滚动全靠 JS 同步 textarea 的 scrollTop/Left */
 .ce-layer {
-  color: #e8e8f0; /* 默认前景（普通文本值，已经较亮） */
+  color: rgb(var(--ce-text));
   background: transparent;
+  overflow: hidden;
 }
 
-/* 上层 textarea：文字透明，只保留光标和选区 */
+/* 上层 textarea：唯一可滚动层，overflow:auto */
 .ce-input {
   color: transparent;
-  caret-color: #8a2be2; /* 紫色光标，呼应主题 */
+  caret-color: rgb(var(--accent));
   background: transparent;
   resize: none;
+  overflow: auto;
 }
 .ce-input::placeholder {
-  color: #6b6b85;
+  color: rgb(var(--text-muted));
 }
 .ce-input::selection {
-  background: rgba(138, 43, 226, 0.3); /* 半透明紫选区 */
+  background: rgb(var(--accent) / 0.3);
 }
 
-/* —— 高亮 token 配色 —— */
+/* —— 高亮 token 配色（变量是 RGB 三元组，需 rgb() 包裹） —— */
 .ce-key {
-  color: #c792ea; /* 键名：浅紫 */
+  color: rgb(var(--ce-key));
   font-weight: 500;
 }
 .ce-colon {
-  color: #9a9ab5; /* 冒号：浅灰（提亮，原 #6b6b85 太暗） */
+  color: rgb(var(--ce-colon));
 }
 .ce-number {
-  color: #82aaff; /* 数值：蓝 */
+  color: rgb(var(--ce-number));
 }
 .ce-bool {
-  color: #c3e88d; /* yes/no/on/off：绿 */
+  color: rgb(var(--ce-bool));
 }
 .ce-string {
-  color: #c3e88d; /* 字符串：绿 */
+  color: rgb(var(--ce-string));
 }
 .ce-comment {
-  color: #9696b0; /* 注释：提亮到接近 text-secondary，保证可读 */
-  /* 不用斜体 —— 中文小字号斜体反而难读 */
+  color: rgb(var(--ce-comment));
 }
 .ce-sep {
-  color: #6a6a8a; /* 分隔线 ==== ----：略暗于注释 */
+  color: rgb(var(--ce-sep));
 }
 .ce-import {
-  color: #f78c6c; /* import 指令：橙 */
+  color: rgb(var(--ce-import));
 }

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
-import type { ServiceId, ServiceStatus, LogEntry, ConfFile, MysqlConfig } from '@rosever/shared';
+import type { ServiceId, ServiceStatus, LogEntry, ConfFile, MysqlConfig, BackupSchedule } from '@rosever/shared';
 
 /**
  * 暴露给渲染进程的安全 API。
@@ -14,6 +14,17 @@ export type TargetStatus =
 const api = {
   // 通用
   getVersion: () => ipcRenderer.invoke('app:version'),
+
+  // 窗口控制（无边框窗口的自定义标题栏用）
+  winMinimize: () => ipcRenderer.invoke('win:minimize'),
+  winMaximize: () => ipcRenderer.invoke('win:maximize'),
+  winClose: () => ipcRenderer.invoke('win:close'),
+  winIsMaximized: () => ipcRenderer.invoke('win:isMaximized') as Promise<boolean>,
+  onMaximizeChange: (cb: (maximized: boolean) => void) => {
+    const handler = (_e: unknown, val: boolean): void => cb(val);
+    ipcRenderer.on('win:maximizeChanged', handler);
+    return () => ipcRenderer.removeListener('win:maximizeChanged', handler);
+  },
 
   // 配置
   getServerRoot: () => ipcRenderer.invoke('config:getServerRoot'),
@@ -73,6 +84,12 @@ const api = {
       ok: boolean;
       error?: string;
     }>,
+  /** 递归列出某目录下所有 .conf 文件（相对 serverRoot，正斜杠） */
+  listConfTree: (dirRel: string) =>
+    ipcRenderer.invoke('conf:listTree', dirRel) as Promise<{ files: string[] } | { error: string }>,
+  /** 新建 conf 文件（已存在则返回错误，不覆盖） */
+  createConf: (relPath: string) =>
+    ipcRenderer.invoke('conf:create', relPath) as Promise<{ ok: boolean; path?: string; error?: string }>,
 
   // 数据库
   getDbConfig: () => ipcRenderer.invoke('db:getConfig') as Promise<MysqlConfig>,
@@ -122,6 +139,24 @@ const api = {
     ipcRenderer.invoke('db:importSql', cfg, relPath) as Promise<{ ok: boolean; file: string; error?: string }>,
   backupDb: (cfg: MysqlConfig) =>
     ipcRenderer.invoke('db:backup', cfg) as Promise<{ ok: boolean; error?: string }>,
+
+  // 数据库自动备份计划（整库）
+  getBackupSchedule: () =>
+    ipcRenderer.invoke('backup:getSchedule') as Promise<BackupSchedule>,
+  setBackupSchedule: (schedule: BackupSchedule) =>
+    ipcRenderer.invoke('backup:setSchedule', schedule) as Promise<{ ok: boolean }>,
+  // 日志表备份计划（单独的 10 张 *log 表）
+  getLogBackupSchedule: () =>
+    ipcRenderer.invoke('backup:getLogSchedule') as Promise<BackupSchedule>,
+  setLogBackupSchedule: (schedule: BackupSchedule) =>
+    ipcRenderer.invoke('backup:setLogSchedule', schedule) as Promise<{ ok: boolean }>,
+  // 共用
+  pickBackupDir: () =>
+    ipcRenderer.invoke('backup:pickDir') as Promise<{ dir?: string; canceled: boolean }>,
+  runBackupNow: () =>
+    ipcRenderer.invoke('backup:runNow') as Promise<{ ok: boolean; error?: string; filePath?: string }>,
+  runLogBackupNow: () =>
+    ipcRenderer.invoke('backup:runLogNow') as Promise<{ ok: boolean; error?: string; filePath?: string }>,
 
   // 工具
   listTools: () =>

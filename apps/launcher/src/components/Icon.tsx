@@ -58,6 +58,9 @@ export const Icon = {
   Save: (p: IconProps) => (
     <Svg {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><path d="M17 21v-8H7v8M7 3v5h8" /></Svg>
   ),
+  Clock: (p: IconProps) => (
+    <Svg {...p}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Svg>
+  ),
   Plus: (p: IconProps) => (
     <Svg {...p}><path d="M12 5v14M5 12h14" /></Svg>
   ),
@@ -72,6 +75,18 @@ export const Icon = {
   ),
   Help: (p: IconProps) => (
     <Svg {...p}><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></Svg>
+  ),
+  Sun: (p: IconProps) => (
+    <Svg {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></Svg>
+  ),
+  Moon: (p: IconProps) => (
+    <Svg {...p}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></Svg>
+  ),
+  Script: (p: IconProps) => (
+    <Svg {...p}><path d="M4 4v16" /><path d="M20 4v16" /><path d="M4 4h16" /><path d="M4 20h16" /><polyline points="9 9 12 12 9 15" /></Svg>
+  ),
+  Chevron: (p: IconProps) => (
+    <Svg {...p}><polyline points="9 18 15 12 9 6" /></Svg>
   ),
 };
 

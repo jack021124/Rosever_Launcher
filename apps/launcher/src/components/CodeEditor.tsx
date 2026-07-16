@@ -129,13 +129,26 @@ export function CodeEditor({ value, onChange, onSave, placeholder, className }: 
     return lines.map(highlightLine).join('\n');
   }, [value]);
 
-  // 同步滚动：textarea 滚动时把 pre 跟过去
+  /**
+   * 同步滚动：pre 用 overflow:hidden 不可滚动，
+   * 用 transform: translate 把高亮内容反向移动到 textarea 的滚动位置。
+   * 这样只有 textarea 一层负责滚动，彻底避免两层滚动不一致。
+   */
   const syncScroll = () => {
     const ta = taRef.current;
     const pre = preRef.current;
     if (!ta || !pre) return;
-    pre.scrollTop = ta.scrollTop;
-    pre.scrollLeft = ta.scrollLeft;
+    // translate 负值 = 内容随 textarea 滚动方向移动
+    pre.style.transform = `translate(${-ta.scrollLeft}px, ${-ta.scrollTop}px)`;
+  };
+
+  /**
+   * 延迟同步：用 rAF 在浏览器完成 textarea 的自动滚动后再同步 pre。
+   * 退格/方向键等操作会让 textarea 自动把光标滚进视口，
+   * 这个自动滚动发生在当前事件循环之后，直接调 syncScroll 会读到旧的 scrollTop。
+   */
+  const syncScrollNextFrame = () => {
+    requestAnimationFrame(syncScroll);
   };
 
   // 内容变化后也同步一次（防止初始定位错位）
@@ -145,19 +158,31 @@ export function CodeEditor({ value, onChange, onSave, placeholder, className }: 
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
-      {/* 底层高亮层。dangerouslySetInnerHTML 内容是本地生成且已转义，安全 */}
+      {/* 底层高亮层。用 top-0/left-0 定位（不用 inset-0，否则高度被钉死在容器高度，
+          内容超出会被裁）。高度由内容撑开，外层 overflow:hidden 裁剪可视区外。
+          transform 平移跟随 textarea 滚动。 */}
       <pre
         ref={preRef}
         aria-hidden
-        className="ce-layer absolute inset-0 m-0 overflow-auto whitespace-pre pointer-events-none"
+        className="ce-layer absolute top-0 left-0 m-0 whitespace-pre pointer-events-none"
         dangerouslySetInnerHTML={{ __html: highlighted + '\n' }}
       />
       {/* 上层透明 textarea。wrap 透传 off，让长行水平滚动而非折行 */}
       <textarea
         ref={taRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          // 内容变化后 textarea 可能自动滚动（如退格删到行首回退到上行），
+          // 用 rAF 等 textarea 滚完再同步 pre
+          syncScrollNextFrame();
+        }}
         onScroll={syncScroll}
+        // 退格/方向键/Home/End 等不改内容但会让 textarea 自动滚动光标到视口，
+        // keyup 后同步一次 pre
+        onKeyUp={syncScrollNextFrame}
+        // 鼠标点击移动光标也可能触发自动滚动
+        onClick={syncScrollNextFrame}
         spellCheck={false}
         {...{ wrap: 'off' }}
         placeholder={placeholder}
@@ -172,12 +197,16 @@ export function CodeEditor({ value, onChange, onSave, placeholder, className }: 
             onChange(next);
             requestAnimationFrame(() => {
               ta.selectionStart = ta.selectionEnd = start + 4;
+              syncScrollNextFrame();
             });
           }
           if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             onSave?.();
           }
+          // 退格/删除/方向键等会在 keydown 后触发 textarea 自动滚动，
+          // 等 1 帧让浏览器滚完再同步
+          syncScrollNextFrame();
         }}
       />
     </div>

@@ -27,6 +27,8 @@ Thumbs.db
 
 # Electron build artifacts
 release/
+release*/
+
 
 # Agent 部署配置（含真实 token，只提交 .example 模板）
 apps/agent/agent.json

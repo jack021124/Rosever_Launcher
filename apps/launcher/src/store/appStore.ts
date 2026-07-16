@@ -1,5 +1,18 @@
 import { create } from 'zustand';
 import { useServiceStore } from './serviceStore';
+import {
+  getTheme,
+  DEFAULT_THEME,
+  CODE_HIGHLIGHT_DARK,
+  CODE_HIGHLIGHT_LIGHT,
+  type CustomSettings,
+  defaultCustomSettings,
+  DEFAULT_FONT_SANS,
+  DEFAULT_FONT_MONO,
+  DEFAULT_FONT_SIZE_BASE,
+  DEFAULT_CE_FONT_SIZE,
+  DEFAULT_CE_LINE_HEIGHT,
+} from '@/themes';
 
 /** 当前操作目标：本地或某台远程服务器 */
 export type Target =
@@ -17,6 +30,78 @@ export type ConnState =
   | 'bye';
 
 const TARGETS_STORAGE_KEY = 'rosever.targets';
+const THEME_STORAGE_KEY = 'rosever.theme';
+const CUSTOM_STORAGE_KEY = 'rosever.custom';
+
+export type Theme = string; // 主题 id（见 themes.ts 的 THEMES）
+
+/**
+ * 把主题 + 自定义叠加应用到 DOM。
+ * 顺序：先写主题的 colors + 对应 mode 的高亮，再写字体默认值，最后叠加用户自定义覆盖。
+ * 自定义字段为 null 时跳过（用主题/默认值），非 null 则覆盖。
+ */
+function applyTheme(themeId: string, custom?: CustomSettings): void {
+  const theme = getTheme(themeId);
+  const root = document.documentElement;
+  root.dataset.theme = theme.mode;
+  root.dataset.themeId = themeId;
+
+  // 1. 主题颜色 + 对应 mode 的高亮配色
+  const all: Record<string, string> = {
+    ...theme.colors,
+    ...(theme.mode === 'dark' ? CODE_HIGHLIGHT_DARK : CODE_HIGHLIGHT_LIGHT),
+  };
+
+  // 2. 字体默认值（主题不写这些，由这里提供兜底）。字号必须带 px 单位
+  all['--font-sans'] = DEFAULT_FONT_SANS;
+  all['--font-mono'] = DEFAULT_FONT_MONO;
+  all['--font-size-base'] = `${DEFAULT_FONT_SIZE_BASE}px`;
+  all['--ce-font-size'] = `${DEFAULT_CE_FONT_SIZE}px`;
+  all['--ce-line-height'] = String(DEFAULT_CE_LINE_HEIGHT);
+
+  // 3. 叠加用户自定义（非空才覆盖）
+  if (custom) {
+    if (custom.fontSans) all['--font-sans'] = custom.fontSans;
+    if (custom.fontMono) all['--font-mono'] = custom.fontMono;
+    if (custom.fontSizeBase != null) all['--font-size-base'] = `${custom.fontSizeBase}px`;
+    if (custom.ceFontSize != null) all['--ce-font-size'] = `${custom.ceFontSize}px`;
+    if (custom.ceLineHeight != null) all['--ce-line-height'] = String(custom.ceLineHeight);
+    Object.assign(all, custom.highlight);
+  }
+
+  for (const [k, v] of Object.entries(all)) {
+    root.style.setProperty(k, v);
+  }
+}
+
+/** 从 localStorage 加载主题 id */
+function loadPersistedTheme(): string {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
+
+/** 从 localStorage 加载字体/高亮自定义 */
+function loadPersistedCustom(): CustomSettings {
+  try {
+    const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
+    if (raw) return { ...defaultCustomSettings(), ...JSON.parse(raw) };
+  } catch {
+    /* localStorage 不可用 */
+  }
+  return defaultCustomSettings();
+}
+
+/** 持久化字体/高亮自定义 */
+function persistCustom(c: CustomSettings): void {
+  try {
+    localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(c));
+  } catch {
+    /* localStorage 不可用 */
+  }
+}
 
 /** 从 localStorage 加载已保存的 target 列表 */
 function loadPersistedTargets(): Target[] {
@@ -72,15 +157,31 @@ interface AppState {
   loadServerRoot: () => Promise<void>;
   /** 让用户选择目录并保存 */
   pickServerRoot: () => Promise<void>;
+  /** 当前主题 id */
+  theme: Theme;
+  /** 切换到指定主题（写 CSS 变量 + 持久化，带上当前自定义） */
+  setTheme: (id: string) => void;
+  /** 字体/高亮自定义设置 */
+  custom: CustomSettings;
+  /** 更新自定义设置（局部合并，立即应用到 DOM + 持久化） */
+  setCustom: (patch: Partial<CustomSettings>) => void;
+  /** 重置全部自定义为主题默认 */
+  resetCustom: () => void;
 }
 
 const initialTargets = loadPersistedTargets();
+const initialTheme = loadPersistedTheme();
+const initialCustom = loadPersistedCustom();
+// 启动时立即应用主题 + 自定义，避免首屏闪烁
+applyTheme(initialTheme, initialCustom);
 
 export const useAppStore = create<AppState>((set, get) => ({
   target: initialTargets[0],
   targets: initialTargets,
   connState: 'local',
   connDetail: undefined,
+  theme: initialTheme,
+  custom: initialCustom,
 
   switchTarget: async (t) => {
     // 切换前清空服务状态/日志，避免上一个 target 的数据残留
@@ -150,6 +251,30 @@ export const useAppStore = create<AppState>((set, get) => ({
         snap.forEach(updateStatus);
       }
     }
+  },
+
+  setTheme: (id: string) => {
+    applyTheme(id, get().custom);
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, id);
+    } catch {
+      /* localStorage 不可用 */
+    }
+    set({ theme: id });
+  },
+
+  setCustom: (patch) => {
+    const next = { ...get().custom, ...patch };
+    applyTheme(get().theme, next);
+    persistCustom(next);
+    set({ custom: next });
+  },
+
+  resetCustom: () => {
+    const next = defaultCustomSettings();
+    applyTheme(get().theme, next);
+    persistCustom(next);
+    set({ custom: next });
   },
 }));
 

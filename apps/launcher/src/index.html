@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
     <title>Rosever Launcher</title>
+    <script>
+      // 尽早设置背景色，避免 React 加载前的白屏闪烁。
+      // 完整主题变量由 appStore 的 applyTheme 在 React 启动后设置。
+      try {
+        var t = localStorage.getItem('rosever.theme');
+        // 亮色主题用浅背景，其余（含 null）用深色默认
+        document.documentElement.style.background = (t === 'light-clean' || t === 'light-blue') ? '#F7F7FA' : '#1E1E2E';
+      } catch (e) {
+        document.documentElement.style.background = '#1E1E2E';
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -5,7 +5,7 @@
  * （如 "conf/battle/exp.conf"），由调用方提供 serverRoot。
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, readdirSync } from 'node:fs';
-import { join, dirname, basename } from 'node:path';
+import { join, dirname, basename, relative } from 'node:path';
 import * as iconv from 'iconv-lite';
 import { parseConf, writeConf } from './confParser.js';
 import type { ConfFile } from '../types.js';
@@ -89,5 +89,61 @@ export class ConfStore {
     return readdirSync(dir)
       .filter((f) => f.endsWith('.conf'))
       .map((f) => `${dirRel}/${f}`.replace(/\\/g, '/'));
+  }
+
+  /**
+   * 递归列出某目录下所有 .conf 文件（含子目录），
+   * 返回相对 serverRoot 的路径（正斜杠），按字母序排序。
+   * 用于「脚本配置」页扫描 npc/ 下的 scripts_*.conf。
+   * 跳过隐藏目录与 .backup 目录。
+   */
+  listConfTree(dirRel: string): string[] {
+    const root = join(this.opts.serverRoot, dirRel);
+    if (!existsSync(root)) return [];
+    const results: string[] = [];
+    const walk = (dirAbs: string): void => {
+      let entries;
+      try {
+        entries = readdirSync(dirAbs, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (entry.name.startsWith('.') || entry.name === '.backup') continue;
+        const childAbs = join(dirAbs, entry.name);
+        if (entry.isDirectory()) {
+          walk(childAbs);
+        } else if (entry.isFile() && entry.name.endsWith('.conf')) {
+          results.push(relative(this.opts.serverRoot, childAbs).replace(/\\/g, '/'));
+        }
+      }
+    };
+    walk(root);
+    return results.sort();
+  }
+
+  /**
+   * 新建一个 conf 文件（若不存在）。
+   * 用于「脚本配置」页的「新建」功能：用户输入文件名，直接在指定目录创建空 conf。
+   * 已存在则返回错误（不覆盖），避免误操作。
+   * @param relPath 相对 serverRoot 的完整路径（含 .conf 后缀）
+   * @returns 创建后的相对路径
+   */
+  createConf(relPath: string): string {
+    const abs = join(this.opts.serverRoot, relPath);
+    if (existsSync(abs)) {
+      throw new Error(`文件已存在: ${relPath}`);
+    }
+    const dir = dirname(abs);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    // 写入 conf 标准头部注释（CRLF 换行，与 BetterRA conf 风格一致）
+    const header =
+      '// ==============================================================\r\n' +
+      `// ${basename(relPath)}\r\n` +
+      '// ==============================================================\r\n' +
+      '// npc: npc/path/to/your_script.txt\r\n' +
+      '\r\n';
+    writeFileSync(abs, iconv.encode(header, CONF_ENCODING));
+    return relPath;
   }
 }

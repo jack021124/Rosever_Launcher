@@ -185,7 +185,7 @@ export const CONF_SECTIONS: readonly ConfSection[] = [
     id: 'gm',
     label: 'GM 权限',
     files: [
-      { path: 'gm.conf', label: 'GM 设置' },
+      { path: 'battle/gm.conf', label: 'GM 设置' },
       { path: 'groups.yml', label: '玩家组 (yml)' },
     ],
   },
@@ -198,4 +198,39 @@ export interface MysqlConfig {
   user: string;
   password: string;
   database: string;
+}
+
+/** 数据库自动备份计划（持久化在 launcher 的 config.json） */
+export interface BackupSchedule {
+  enabled: boolean;
+  intervalHours: number; // 间隔小时数
+  dir: string; // 备份目录绝对路径
+  lastBackup: number; // 上次备份时间戳（ms）
+}
+
+/**
+ * npc/ 下脚本清单文件（scripts_*.conf）的中文标签映射。
+ * key 是文件名（basename，不含目录），value 是中文显示名。
+ * 用于「脚本配置」页左侧导航：不显示原始 scripts_xxx.conf，
+ * 而是显示「自定义脚本」「传送点」这类有意义的名字。
+ *
+ * 未命中映射的文件回退显示去扩展名的原名（如 script_BetterRa → script_BetterRa）。
+ */
+export const NPC_SCRIPT_LABELS: Record<string, string> = {
+  script_BetterRa: 'BetterRA 脚本',
+  scripts_athena: '主脚本',
+  scripts_custom: '自定义脚本',
+  scripts_guild: '公会脚本',
+  scripts_jobs: '职业脚本',
+  scripts_main: '入口脚本',
+  scripts_mapflags: '地图标记',
+  scripts_monsters: '魔物脚本',
+  scripts_test: '测试脚本',
+  scripts_warps: '传送点',
+};
+
+/** 获取 npc 脚本文件的中文标签（去 .conf 后按映射查找，未命中回退原名） */
+export function npcScriptLabel(fileName: string): string {
+  const base = fileName.replace(/\.conf$/i, '');
+  return NPC_SCRIPT_LABELS[base] ?? base;
 }

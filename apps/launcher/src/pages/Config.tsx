@@ -3,6 +3,7 @@ import { PageWrapper } from './PageWrapper';
 import { CONF_SECTIONS } from '@rosever/shared/types';
 import { Icon } from '@/components/Icon';
 import { CodeEditor } from '@/components/CodeEditor';
+import { CollapsibleSection } from '@/components/CollapsibleSection';
 
 /**
  * 配置页 —— 纯文本编辑模式。
@@ -35,8 +36,10 @@ export function Config() {
       setSavedText('');
       return;
     }
-    setText(res.originalText);
-    setSavedText(res.originalText);
+    // 归一化换行：conf 文件是 CRLF，textarea/pre 统一用 LF 才能对齐光标
+    const normalized = res.originalText.replace(/\r\n/g, '\n');
+    setText(normalized);
+    setSavedText(normalized);
   }, []);
 
   useEffect(() => {
@@ -81,14 +84,11 @@ export function Config() {
         </>
       }
     >
-      <div className="flex gap-4 h-full">
+      <div className="flex gap-4 h-full min-h-0">
         {/* 左：分类 + 文件导航 */}
         <div className="w-44 shrink-0 flex flex-col gap-3 overflow-y-auto pr-1">
           {CONF_SECTIONS.map((sec) => (
-            <div key={sec.id}>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted px-1 mb-1">
-                {sec.label}
-              </div>
+            <CollapsibleSection key={sec.id} label={sec.label}>
               {sec.files.map((f) => (
                 <button
                   key={f.path}
@@ -102,12 +102,12 @@ export function Config() {
                   {f.label}
                 </button>
               ))}
-            </div>
+            </CollapsibleSection>
           ))}
         </div>
 
         {/* 右：纯文本编辑区 */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
           {/* 工具栏 */}
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="text-[11px] text-text-muted font-mono">
@@ -139,7 +139,7 @@ export function Config() {
           {loading ? (
             <div className="card flex-1 p-8 text-center text-text-muted text-sm">加载中…</div>
           ) : (
-            <div className="card flex-1 overflow-hidden p-0">
+            <div className="card flex-1 overflow-hidden p-0 min-h-0">
               <CodeEditor
                 value={text}
                 onChange={setText}

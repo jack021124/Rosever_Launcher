@@ -18,21 +18,29 @@ const GROUPS: NavGroup[] = [
     items: [
       { to: '/', label: '服务控制', icon: 'Power' },
       { to: '/config', label: '配置', icon: 'Settings' },
+      { to: '/npc', label: '脚本配置', icon: 'Script' },
       { to: '/database', label: '数据库', icon: 'Database' },
       { to: '/logs', label: '日志', icon: 'Log' },
     ],
   },
-  {
-    title: '远程',
-    items: [
-      { to: '/servers', label: '服务器管理', icon: 'Server' },
-    ],
-  },
+  // 「远程」分组暂时屏蔽（远程管理功能保留代码，仅隐藏 UI 入口）
+  // {
+  //   title: '远程',
+  //   items: [
+  //     { to: '/servers', label: '服务器管理', icon: 'Server' },
+  //   ],
+  // },
   {
     title: '工具',
     items: [
       { to: '/tools/data', label: '数据工具', icon: 'Tool' },
       { to: '/tools/map', label: '地图工具', icon: 'Map' },
+    ],
+  },
+  {
+    title: '系统',
+    items: [
+      { to: '/settings', label: '设置', icon: 'Settings' },
     ],
   },
 ];

@@ -15,6 +15,24 @@ import type { MysqlConfig } from '../types.js';
 /** conf 文件编码，与 confStore 保持一致 */
 const CONF_ENCODING = 'gbk';
 
+/**
+ * rAthena/BetterRA 的日志表清单（来自 sql-files/logs.sql）。
+ * 这些表记录运行时日志（指令、道具、金币、登录等），体积大、增长快，
+ * 适合单独定期备份而非每次随整库 dump。
+ */
+export const LOG_TABLES = [
+  'atcommandlog',
+  'branchlog',
+  'cashlog',
+  'chatlog',
+  'feedinglog',
+  'loginlog',
+  'mvplog',
+  'npclog',
+  'picklog',
+  'zenylog',
+] as const;
+
 export interface ConnectResult {
   ok: boolean;
   version?: string;
@@ -384,6 +402,39 @@ export class DbManager {
       const errChunks: Buffer[] = [];
       child.stderr.on('data', (b: Buffer) => errChunks.push(b));
       child.on('error', (err) => resolve({ ok: false, error: '无法启动 mysqldump（请确认已安装 MySQL 并加入 PATH）: ' + err.message }));
+      child.on('exit', (code) => {
+        if (code === 0) {
+          writeFileSync(outAbsPath, Buffer.concat(chunks));
+          resolve({ ok: true });
+        } else {
+          resolve({ ok: false, error: iconv.decode(Buffer.concat(errChunks), CONF_ENCODING) || `mysqldump 退出码 ${code}` });
+        }
+      });
+    });
+  }
+
+  /**
+   * 导出指定的日志表（atcommandlog/picklog/zenylog 等）到单个 .sql 文件。
+   * 与整库备份的区别：mysqldump 末尾追加表名列表，只导这几张表的数据。
+   * 用于「日志备份」——日志表体积大、增长快，单独备份更灵活。
+   */
+  async backupLogTables(cfg: MysqlConfig, outAbsPath: string, tables: string[]): Promise<{ ok: boolean; error?: string }> {
+    return new Promise((resolve) => {
+      const args = [
+        `-h${cfg.host}`,
+        `-P${cfg.port}`,
+        `-u${cfg.user}`,
+        `-p${cfg.password}`,
+        '--default-character-set=utf8mb4',
+        cfg.database,
+        ...tables,
+      ];
+      const child = spawn('mysqldump', args, { windowsHide: true });
+      const chunks: Buffer[] = [];
+      child.stdout.on('data', (b: Buffer) => chunks.push(b));
+      const errChunks: Buffer[] = [];
+      child.stderr.on('data', (b: Buffer) => errChunks.push(b));
+      child.on('error', (err) => resolve({ ok: false, error: '无法启动 mysqldump: ' + err.message }));
       child.on('exit', (code) => {
         if (code === 0) {
           writeFileSync(outAbsPath, Buffer.concat(chunks));

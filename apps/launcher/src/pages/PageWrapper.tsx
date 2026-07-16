@@ -18,7 +18,7 @@ export function PageWrapper({ title, subtitle, actions, children }: Props) {
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      <div className="flex-1 overflow-auto p-5">{children}</div>
+      <div className="flex-1 min-h-0 overflow-auto p-5">{children}</div>
     </div>
   );
 }

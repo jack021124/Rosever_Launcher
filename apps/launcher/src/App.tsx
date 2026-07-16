@@ -8,10 +8,12 @@ import { useAppStore, mapTargetStatus } from '@/store/appStore';
 import { SetupGuide } from '@/components/SetupGuide';
 import { ServiceControl } from '@/pages/ServiceControl';
 import { Config } from '@/pages/Config';
+import { NpcScripts } from '@/pages/NpcScripts';
 import { Database } from '@/pages/Database';
 import { Logs } from '@/pages/Logs';
 import { Servers } from '@/pages/Servers';
 import { DataTools, MapTools } from '@/pages/Tools';
+import { Settings } from '@/pages/Settings';
 
 export default function App() {
   // 订阅进程事件 → zustand
@@ -49,19 +51,22 @@ export default function App() {
   return (
     <div className="h-full flex flex-col">
       <TitleBar />
+      {/* 远程管理屏蔽：TargetSwitcher 当前返回 null，渲染无效果。恢复时去掉 TargetSwitcher 内的 return null */}
       <TargetSwitcher />
       <div className="flex-1 flex overflow-hidden">
         <SideNav />
-        <main className="flex-1 overflow-hidden bg-bg-base">
+        <main className="flex-1 min-h-0 overflow-hidden bg-bg-base">
           {ready ? (
             <Routes>
               <Route path="/" element={<ServiceControl />} />
               <Route path="/config" element={<Config />} />
+              <Route path="/npc" element={<NpcScripts />} />
               <Route path="/database" element={<Database />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/servers" element={<Servers />} />
               <Route path="/tools/data" element={<DataTools />} />
               <Route path="/tools/map" element={<MapTools />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           ) : (
             <SetupGuide />

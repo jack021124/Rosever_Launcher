@@ -2,6 +2,17 @@ import { useState } from 'react';
 import { useAppStore, type Target, type ConnState } from '@/store/appStore';
 import { Icon } from '@/components/Icon';
 
+/**
+ * 本地/远程目标切换条。
+ *
+ * ⚠ 远程管理功能暂时屏蔽 —— 整个切换条不渲染。
+ * 远程逻辑代码（appStore/remoteBridge/main routed）全部保留，
+ * 恢复时去掉下面这行 return null 即可。
+ */
+export function TargetSwitcher() {
+  return null;
+}
+
 /** 连接状态 → 圆点颜色 + 中文 */
 function connVisual(s: ConnState): { color: string; label: string } {
   switch (s) {
@@ -22,7 +33,9 @@ function connVisual(s: ConnState): { color: string; label: string } {
   }
 }
 
-export function TargetSwitcher() {
+// 远程管理屏蔽前的实现（保留备用，恢复时把上面 return null 的 TargetSwitcher 删掉、
+// 把本函数改回 export function TargetSwitcher 即可）
+export function _TargetSwitcherImpl() {
   const { target, targets, connState, connDetail, switchTarget, addTarget, removeTarget } = useAppStore();
   const [showAdd, setShowAdd] = useState(false);
   // 添加表单
