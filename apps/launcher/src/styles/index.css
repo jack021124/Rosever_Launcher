@@ -27,14 +27,6 @@
   --border: 54 54 80;
   --border-strong: 74 74 106;
   --ce-text: 232 232 240;
-  --ce-key: 199 146 234;
-  --ce-colon: 154 154 181;
-  --ce-number: 130 170 255;
-  --ce-bool: 195 232 141;
-  --ce-string: 195 232 141;
-  --ce-comment: 150 150 176;
-  --ce-sep: 106 106 138;
-  --ce-import: 247 140 108;
 }
 
 @layer base {

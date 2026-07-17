@@ -3,8 +3,6 @@ import { useServiceStore } from './serviceStore';
 import {
   getTheme,
   DEFAULT_THEME,
-  CODE_HIGHLIGHT_DARK,
-  CODE_HIGHLIGHT_LIGHT,
   type CustomSettings,
   defaultCustomSettings,
   DEFAULT_FONT_SANS,
@@ -46,10 +44,10 @@ function applyTheme(themeId: string, custom?: CustomSettings): void {
   root.dataset.theme = theme.mode;
   root.dataset.themeId = themeId;
 
-  // 1. 主题颜色 + 对应 mode 的高亮配色
+  // 1. 主题颜色 + 代码编辑器文字色（深色/浅色）
   const all: Record<string, string> = {
     ...theme.colors,
-    ...(theme.mode === 'dark' ? CODE_HIGHLIGHT_DARK : CODE_HIGHLIGHT_LIGHT),
+    '--ce-text': theme.mode === 'dark' ? '232 232 240' : '50 50 70',
   };
 
   // 2. 字体默认值（主题不写这些，由这里提供兜底）。字号必须带 px 单位
@@ -66,7 +64,6 @@ function applyTheme(themeId: string, custom?: CustomSettings): void {
     if (custom.fontSizeBase != null) all['--font-size-base'] = `${custom.fontSizeBase}px`;
     if (custom.ceFontSize != null) all['--ce-font-size'] = `${custom.ceFontSize}px`;
     if (custom.ceLineHeight != null) all['--ce-line-height'] = String(custom.ceLineHeight);
-    Object.assign(all, custom.highlight);
   }
 
   for (const [k, v] of Object.entries(all)) {

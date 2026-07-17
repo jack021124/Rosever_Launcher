@@ -224,31 +224,6 @@ export const THEMES: ThemeDef[] = [
 /** 默认主题 id */
 export const DEFAULT_THEME = 'dark-purple';
 
-/** CodeEditor 语法高亮配色（按 mode 区分，深/亮底各一套） */
-export const CODE_HIGHLIGHT_DARK: Record<string, string> = {
-  '--ce-text': '232 232 240',
-  '--ce-key': '199 146 234',
-  '--ce-colon': '154 154 181',
-  '--ce-number': '130 170 255',
-  '--ce-bool': '195 232 141',
-  '--ce-string': '195 232 141',
-  '--ce-comment': '150 150 176',
-  '--ce-sep': '106 106 138',
-  '--ce-import': '247 140 108',
-};
-
-export const CODE_HIGHLIGHT_LIGHT: Record<string, string> = {
-  '--ce-text': '50 50 70',
-  '--ce-key': '138 43 226',
-  '--ce-colon': '120 120 140',
-  '--ce-number': '40 80 200',
-  '--ce-bool': '40 130 50',
-  '--ce-string': '40 130 50',
-  '--ce-comment': '130 130 150',
-  '--ce-sep': '180 180 195',
-  '--ce-import': '200 90 30',
-};
-
 /** 根据 id 查找主题，找不到则回退默认 */
 export function getTheme(id: string): ThemeDef {
   return THEMES.find((t) => t.id === id) ?? THEMES[0];
@@ -298,9 +273,6 @@ export interface CustomSettings {
   ceFontSize: number | null;
   /** 代码行高，null = 默认 1.6 */
   ceLineHeight: number | null;
-  /** 高亮颜色覆盖（key = '--ce-key' 等，value = 'r g b' 或 hex）。
-   *  空对象 = 用主题对应 mode 的高亮配色 */
-  highlight: Record<string, string>;
 }
 
 export function defaultCustomSettings(): CustomSettings {
@@ -310,6 +282,5 @@ export function defaultCustomSettings(): CustomSettings {
     fontSizeBase: null,
     ceFontSize: null,
     ceLineHeight: null,
-    highlight: {},
   };
 }
