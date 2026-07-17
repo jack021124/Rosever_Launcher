@@ -20,26 +20,16 @@ const STATE_DOT: Record<RunState, string> = {
   stopping: 'bg-status-warning animate-pulse',
   crashed: 'bg-status-crashed',
 };
-const LEVEL_COLOR: Record<string, string> = {
-  status: 'text-status-running',
-  info: 'text-text-secondary',
-  notice: 'text-blue-400',
-  warning: 'text-status-warning',
-  error: 'text-status-crashed',
-  debug: 'text-text-muted',
-  sql: 'text-purple-400',
-  cli: 'text-cyan-400',
-};
 
 export function ServiceControl() {
   const statuses = useServiceStore((s) => s.statuses);
-  const logs = useServiceStore((s) => s.logs);
   const serverRoot = useAppStore((s) => s.serverRoot);
-  const [expanded, setExpanded] = useState<ServiceId | null>(null);
   // MySQL 连接状态
   const [mysql, setMysql] = useState<{ status: 'idle' | 'checking' | 'ok' | 'fail'; version?: string; error?: string }>({ status: 'idle' });
   // 在线人数
   const [online, setOnline] = useState<number | null>(null);
+  // 各服务端口（从 conf 文件读取，null = 用默认值）
+  const [ports, setPorts] = useState<Record<string, number | null>>({});
 
   const runningCount = Object.values(statuses).filter((s) => s.state === 'running').length;
   const crashedCount = Object.values(statuses).filter((s) => s.state === 'crashed').length;
@@ -55,6 +45,11 @@ export function ServiceControl() {
     }).catch(() => { /* ignore */ });
     return () => { cancelled = true; };
   }, [targetKind]);
+
+  // 从 conf 文件读取各服务端口（目录变化时重新读取）
+  useEffect(() => {
+    window.rosever.getServicePorts().then(setPorts).catch(() => { /* ignore */ });
+  }, [displayRoot]);
 
   /** 检测 MySQL 连接 + 在线人数（页面加载时 + 每 30 秒刷新） */
   const checkHealth = useCallback(async () => {
@@ -138,16 +133,12 @@ export function ServiceControl() {
           const st = statuses[meta.id];
           const running = st.state === 'running';
           const busy = st.state === 'starting' || st.state === 'stopping';
-          const isOpen = expanded === meta.id;
-          const svcLogs = logs.filter((l) => l.service === meta.id).slice(-50);
+          const port = ports[meta.id] ?? meta.port;
           return (
             <div key={meta.id} className="card overflow-hidden">
               <div className="flex items-center justify-between gap-4 p-3">
                 {/* 左：状态 + 名称 */}
-                <button
-                  className="flex items-center gap-3 min-w-0 flex-1 text-left"
-                  onClick={() => setExpanded(isOpen ? null : meta.id)}
-                >
+                <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
                   <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATE_DOT[st.state]}`} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -163,12 +154,12 @@ export function ServiceControl() {
                     </div>
                     <div className="text-xs text-text-muted mt-0.5 flex items-center gap-3">
                       <span className="font-mono">{meta.exe}</span>
-                      <span>:{meta.port}</span>
+                      <span>:{port}</span>
                       {st.pid && <span>pid {st.pid}</span>}
                       {st.lastError && <span className="text-status-crashed truncate">{st.lastError}</span>}
                     </div>
                   </div>
-                </button>
+                </div>
 
                 {/* 右：操作 */}
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -201,37 +192,8 @@ export function ServiceControl() {
                       启动
                     </button>
                   )}
-                  {/* 展开看日志 */}
-                  <button
-                    className="btn-ghost !px-1.5"
-                    onClick={() => setExpanded(isOpen ? null : meta.id)}
-                    title={isOpen ? '收起日志' : '查看日志'}
-                  >
-                    <span className={`inline-block transition-transform ${isOpen ? 'rotate-90' : ''}`}>▸</span>
-                  </button>
                 </div>
               </div>
-
-              {/* 内联日志面板 */}
-              {isOpen && (
-                <div className="border-t border-border bg-bg-input/50 font-mono text-[11px] leading-relaxed max-h-48 overflow-y-auto p-2 selectable">
-                  {svcLogs.length === 0 ? (
-                    <div className="text-text-muted text-center py-4">暂无日志输出</div>
-                  ) : (
-                    svcLogs.map((l, i) => (
-                      <div key={i} className="flex gap-2 px-1 py-0.5 hover:bg-bg-hover/30 rounded">
-                        <span className="text-text-muted shrink-0 tabular-nums">
-                          {new Date(l.ts).toLocaleTimeString('zh-CN', { hour12: false })}
-                        </span>
-                        <span className={`shrink-0 w-14 font-semibold ${LEVEL_COLOR[l.level] ?? ''}`}>
-                          [{l.level}]
-                        </span>
-                        <span className={`break-all ${LEVEL_COLOR[l.level] ?? 'text-text-secondary'}`}>{l.text}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
             </div>
           );
         })}
@@ -240,7 +202,7 @@ export function ServiceControl() {
       <p className="text-xs text-text-muted mt-5 flex items-center gap-1.5">
         <Icon.Refresh size={12} />
         服务崩溃（退出码 &gt; 1）后将在 15 秒后自动重启，对应 serv.bat 守护逻辑。
-        完整日志与历史记录请查看「日志」页。点击服务行可展开内联日志。
+        完整日志与历史记录请查看「日志」页。
       </p>
     </PageWrapper>
   );

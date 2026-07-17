@@ -96,6 +96,9 @@ const api = {
   /** 安全覆盖模式：只把 diff 写入 import 覆盖文件 */
   saveConfImport: (relPath: string, editedText: string) =>
     ipcRenderer.invoke('conf:saveImport', relPath, editedText) as Promise<{ ok: boolean; backup?: string; error?: string }>,
+  /** 读取各服务的实际监听端口（从 athena conf 文件解析） */
+  getServicePorts: () =>
+    ipcRenderer.invoke('conf:servicePorts') as Promise<Record<string, number | null>>,
 
   // 数据库
   getDbConfig: () => ipcRenderer.invoke('db:getConfig') as Promise<MysqlConfig>,

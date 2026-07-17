@@ -607,6 +607,15 @@ ipcMain.handle('conf:saveImport', routed('conf:saveImport', async (relPath: stri
   }
 }));
 
+/** 读取各 athena conf 的服务端口（login/char/map/web/websocket） */
+ipcMain.handle('conf:servicePorts', routed('conf:servicePorts', async (): Promise<Record<string, number | null>> => {
+  try {
+    return getConfStore().readServicePorts();
+  } catch {
+    return {};
+  }
+}));
+
 // ---- IPC：数据库 ----
 
 /** 读取 inter_athena.conf 里的 MySQL 配置（远程时用 Agent 回传的缓存） */

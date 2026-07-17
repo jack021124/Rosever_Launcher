@@ -148,6 +148,46 @@ export class ConfStore {
     return relPath;
   }
 
+  /**
+   * 从各 athena conf 文件读取服务的实际监听端口。
+   * 用于「服务控制」页显示真实端口（而非硬编码默认值）。
+   *
+   * 读取规则：
+   *   login  ← conf/login_athena.conf : login_port
+   *   char   ← conf/char_athena.conf  : char_port
+   *   map    ← conf/map_athena.conf   : map_port
+   *   web    ← conf/web_athena.conf   : web_port
+   *   websocket ← conf/websocket_athena.conf : robrowser_port
+   *
+   * 文件不存在或 key 缺失时，对应端口返回 null（调用方可用 SERVICES 默认值兜底）。
+   */
+  readServicePorts(): Record<string, number | null> {
+    const result: Record<string, number | null> = {};
+    const targets: { id: string; conf: string; key: string }[] = [
+      { id: 'login', conf: 'conf/login_athena.conf', key: 'login_port' },
+      { id: 'char', conf: 'conf/char_athena.conf', key: 'char_port' },
+      { id: 'map', conf: 'conf/map_athena.conf', key: 'map_port' },
+      { id: 'web', conf: 'conf/web_athena.conf', key: 'web_port' },
+      { id: 'websocket', conf: 'conf/websocket_athena.conf', key: 'robrowser_port' },
+    ];
+    for (const t of targets) {
+      const abs = join(this.opts.serverRoot, t.conf);
+      if (!existsSync(abs)) {
+        result[t.id] = null;
+        continue;
+      }
+      try {
+        const text = iconv.decode(readFileSync(abs), CONF_ENCODING);
+        const parsed = parseConf(text, t.conf);
+        const item = parsed.items.find((i) => i.key === t.key && !i.disabled);
+        result[t.id] = item ? Number(item.value) : null;
+      } catch {
+        result[t.id] = null;
+      }
+    }
+    return result;
+  }
+
   // ==================== 安全覆盖模式（import/ override）====================
 
   /**
