@@ -123,37 +123,27 @@
 }
 
 /* ============================================
-   CodeEditor —— conf 高亮编辑器
-   overlay 布局：底层 <pre> 着色，上层 textarea 透明
-   两者必须逐字对齐，所以共用同一组排版参数
-   关键：pre 用 overflow:hidden，完全由 JS 同步 scrollTop/Left，
-   不让它自己滚动，避免两层滚动惯性不一致
+   CodeEditor —— conf 纯文本编辑器
+   直接用可见 textarea 显示文字（不再用 overlay 高亮方案，
+   避免 textarea/div 渲染偏差导致退格删错字符）。
    ============================================ */
-.ce-layer,
+.ce-wrap {
+  box-sizing: border-box;
+}
+
 .ce-input {
-  /* 排版参数 —— 两层必须完全一致才能对齐 */
   font-family: var(--font-mono, 'Cascadia Code'), 'Consolas', monospace;
   font-size: var(--ce-font-size, 12px);
   line-height: var(--ce-line-height, 1.6);
   padding: 12px;
   border: 0;
+  margin: 0;
   tab-size: 4;
   letter-spacing: 0;
   word-spacing: 0;
   white-space: pre;
   box-sizing: border-box;
-}
-
-/* 底层高亮：overflow:hidden，滚动全靠 JS 同步 textarea 的 scrollTop/Left */
-.ce-layer {
   color: rgb(var(--ce-text));
-  background: transparent;
-  overflow: hidden;
-}
-
-/* 上层 textarea：唯一可滚动层，overflow:auto */
-.ce-input {
-  color: transparent;
   caret-color: rgb(var(--accent));
   background: transparent;
   resize: none;
@@ -166,33 +156,3 @@
   background: rgb(var(--accent) / 0.3);
 }
 
-/* —— 高亮 token 配色（变量是 RGB 三元组，需 rgb() 包裹） —— */
-/* 注意：ce-layer 和 ce-input（textarea）共享字体度量。
-   高亮 token 绝不能改变 font-weight / font-style / letter-spacing，
-   否则两层字符宽度不一致，光标位置会和可见文字错位
-   （如 userid: s1 里 key 加粗后，光标在 s 后退格会删到 s 前面的字符）。
-   只改颜色，不改字形。 */
-.ce-key {
-  color: rgb(var(--ce-key));
-}
-.ce-colon {
-  color: rgb(var(--ce-colon));
-}
-.ce-number {
-  color: rgb(var(--ce-number));
-}
-.ce-bool {
-  color: rgb(var(--ce-bool));
-}
-.ce-string {
-  color: rgb(var(--ce-string));
-}
-.ce-comment {
-  color: rgb(var(--ce-comment));
-}
-.ce-sep {
-  color: rgb(var(--ce-sep));
-}
-.ce-import {
-  color: rgb(var(--ce-import));
-}
