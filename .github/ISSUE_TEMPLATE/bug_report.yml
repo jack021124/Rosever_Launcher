@@ -1,0 +1,63 @@
+name: 🐛 Bug 报告
+description: 报告一个问题帮助改进渡鸦
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量详细地描述问题，方便定位。
+
+  - type: input
+    id: version
+    attributes:
+      label: 渡鸦版本
+      description: 在「设置」页底部可以看到版本号，或看 README 顶部徽章
+      placeholder: 例如 1.0.3
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: 例如 Windows 11 23H2
+    validations:
+      required: true
+
+  - type: input
+    id: server-version
+    attributes:
+      label: BetterRA / rAthena 服务端版本
+      description: 如果与具体服务端相关（如配置解析、进程启动），请填写
+      placeholder: 例如 BetterRA 2024.xx
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 发生了什么？期望是什么？
+      placeholder: |
+        1. 打开渡鸦，进入「配置」页
+        2. 编辑 login_athena.conf 的 server_name
+        3. 点击保存
+        4. 出现报错 / 文件被写坏
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 报错信息 / 日志
+      description: 控制台报错、应用内提示、log/*.log 里的相关片段
+      render: shell
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 如果上面没写清楚，单独列出来
+      placeholder: |
+        1.
+        2.
+        3.

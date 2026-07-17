@@ -1,0 +1,32 @@
+# CI：每次推送 / PR 自动跑类型检查 + 构建，防止坏代码进仓库
+# 不打包 exe（打包体积大、耗时长，由本地 release 流程负责）
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Typecheck & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查（全部 workspace）
+        run: npm run typecheck
+
+      - name: 构建（全部 workspace）
+        run: npm run build

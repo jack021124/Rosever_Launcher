@@ -9,7 +9,8 @@
 [![Version](https://img.shields.io/badge/version-1.0.3-purple.svg)](./apps/launcher/package.json)
 [![Electron](https://img.shields.io/badge/Electron-31-47848F.svg)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://react.dev/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](#许可证)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](./LICENSE)
+[![CI](https://github.com/jack021124/Rosever_Launcher/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 
 </div>
 
@@ -417,17 +418,32 @@ SERVER_ROOT="F:/path/to/BetterRA" npm run screenshot
 
 ## 🤝 贡献
 
-欢迎提 Issue 和 PR。
+欢迎提 Issue 和 PR！首次贡献请先阅读 [ CONTRIBUTING.md ](./CONTRIBUTING.md)。
 
-- 代码风格：遵循现有 TypeScript + Tailwind 写法
-- 提交前请跑 `npm run typecheck`
-- 提交信息中文 / 英文皆可
+要点速览：
+
+- 🐛 报 Bug 走 [Issue 模板](../../issues/new/choose)，写清版本号 + 复现步骤
+- 🛠️ 开发流程：建分支 → `npm run dev` → `npm run typecheck` + `npm run build` → 提 PR
+- 🎨 改了 UI 的，记得 `npm run screenshot` 更新截图
+- 📦 影响打包产物的改动，按约定升版本号
+- 代码风格：遵循现有 TypeScript + Tailwind 写法，提交信息中文 / 英文皆可
 
 ---
 
 ## 📄 许可证
 
-MIT License © 2024-2026 渡鸦 Raven
+本项目基于 [ **GPL-3.0** ](./LICENSE) 许可证开源。
+
+简单说：
+
+- ✅ 可以**免费使用、修改、分发**（包括商用）
+- ✅ 可以闭源使用（在自托管的服务端里跑渡鸦）
+- ⚠️ 但如果**修改了渡鸦的源码并对外发布**，必须同样以 GPL-3.0 开源你的修改，并附上原许可证
+- 📥 BetterRA / rAthena 服务端本身遵循其各自的许可证，与本启动器无关
+
+> 选用 GPL-3.0 是希望社区对渡鸦的改进能回流共享，让所有人受益。
+
+© 2024-2026 渡鸦 Raven
 
 ---
 

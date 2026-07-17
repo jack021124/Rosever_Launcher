@@ -1,0 +1,6 @@
+# Issue 模板选择器配置
+blank_issues_enabled: true  # 允许提交空白 issue（小问题不用模板）
+contact_links:
+  - name: 💬 提问 / 讨论
+    url: https://github.com/jack021124/Rosever_Launcher/discussions
+    about: 使用问题、想法交流请到 Discussions，不一定算 bug
