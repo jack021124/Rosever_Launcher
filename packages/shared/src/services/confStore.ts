@@ -152,14 +152,17 @@ export class ConfStore {
    * 从各 athena conf 文件读取服务的实际监听端口。
    * 用于「服务控制」页显示真实端口（而非硬编码默认值）。
    *
-   * 读取规则：
-   *   login  ← conf/login_athena.conf : login_port
-   *   char   ← conf/char_athena.conf  : char_port
-   *   map    ← conf/map_athena.conf   : map_port
-   *   web    ← conf/web_athena.conf   : web_port
-   *   websocket ← conf/websocket_athena.conf : robrowser_port
+   * 读取优先级（安全覆盖优先）：
+   *   1. import 覆盖文件里的同名 key（如 conf/import/login_conf.txt 的 login_port）
+   *   2. 原文件里的 key（如 conf/login_athena.conf 的 login_port）
+   *   3. null（调用方用 SERVICES 默认值兜底）
    *
-   * 文件不存在或 key 缺失时，对应端口返回 null（调用方可用 SERVICES 默认值兜底）。
+   * 覆盖文件映射（复用 toImportPath）：
+   *   login_athena.conf  → import/login_conf.txt
+   *   char_athena.conf   → import/char_conf.txt
+   *   map_athena.conf    → import/map_conf.txt
+   *   web_athena.conf    → import/web_conf.txt
+   *   websocket_athena.conf → 无覆盖目标（只读原文件）
    */
   readServicePorts(): Record<string, number | null> {
     const result: Record<string, number | null> = {};
@@ -171,21 +174,32 @@ export class ConfStore {
       { id: 'websocket', conf: 'conf/websocket_athena.conf', key: 'robrowser_port' },
     ];
     for (const t of targets) {
-      const abs = join(this.opts.serverRoot, t.conf);
-      if (!existsSync(abs)) {
-        result[t.id] = null;
-        continue;
+      // 1. 先读原文件
+      let port: number | null = this.readPortFromConf(t.conf, t.key);
+
+      // 2. 再读 import 覆盖文件（优先级更高，覆盖原文件值）
+      const importPath = toImportPath(t.conf);
+      if (importPath) {
+        const importPort = this.readPortFromConf(importPath, t.key);
+        if (importPort !== null) port = importPort;
       }
-      try {
-        const text = iconv.decode(readFileSync(abs), CONF_ENCODING);
-        const parsed = parseConf(text, t.conf);
-        const item = parsed.items.find((i) => i.key === t.key && !i.disabled);
-        result[t.id] = item ? Number(item.value) : null;
-      } catch {
-        result[t.id] = null;
-      }
+      result[t.id] = port;
     }
     return result;
+  }
+
+  /** 从指定 conf 文件读取一个端口 key（disabled 的跳过），文件不存在/key 缺失返回 null */
+  private readPortFromConf(relPath: string, key: string): number | null {
+    const abs = join(this.opts.serverRoot, relPath);
+    if (!existsSync(abs)) return null;
+    try {
+      const text = iconv.decode(readFileSync(abs), CONF_ENCODING);
+      const parsed = parseConf(text, relPath);
+      const item = parsed.items.find((i) => i.key === key && !i.disabled);
+      return item ? Number(item.value) : null;
+    } catch {
+      return null;
+    }
   }
 
   // ==================== 安全覆盖模式（import/ override）====================
