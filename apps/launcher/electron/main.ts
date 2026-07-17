@@ -330,7 +330,7 @@ app.on('window-all-closed', () => {
 // ---- 窗口 ----
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  const mainWindow: BrowserWindow & { __skipCloseConfirm?: boolean } = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 960,
@@ -354,6 +354,9 @@ function createWindow(): void {
   // Windows 上彻底移除菜单栏
   mainWindow.setMenuBarVisibility(false);
 
+  // Windows 上彻底移除菜单栏
+  mainWindow.setMenuBarVisibility(false);
+
   // 窗口显示：ready-to-show 时立刻显示；超过 1.5 秒兜底强制显示
   // （portable 自解压 + 首次加载可能较慢，避免长时间无响应）
   mainWindow.on('ready-to-show', () => {
@@ -366,6 +369,27 @@ function createWindow(): void {
   // 最大化状态变化时通知渲染层（自定义标题栏的按钮图标要更新）
   mainWindow.on('maximize', () => mainWindow.webContents.send('win:maximizeChanged', true));
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('win:maximizeChanged', false));
+
+  // 拦截关闭（Alt+F4 / 任务栏右键关闭等），询问用户确认。
+  // win:close IPC（自定义标题栏按钮）会设 skipCloseConfirm 后再 close()，
+  // 避免重复弹框。
+  mainWindow.on('close', async (e) => {
+    if (mainWindow.__skipCloseConfirm) return;
+    e.preventDefault();
+    const res = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: '关闭渡鸦',
+      message: '确定要关闭渡鸦吗？',
+      detail: '关闭启动器不会停止已运行的服务端进程。\n但如果你通过启动器管理服务端，请先停止所有服务。',
+      buttons: ['取消', '关闭'],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (res.response === 1) {
+      mainWindow.__skipCloseConfirm = true;
+      mainWindow.close();
+    }
+  });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url);
@@ -415,6 +439,7 @@ ipcMain.handle('win:maximize', () => {
   else win.maximize();
 });
 ipcMain.handle('win:close', () => {
+  // 触发窗口的 close 事件，由 mainWindow.on('close') 统一弹确认框
   BrowserWindow.getFocusedWindow()?.close();
 });
 ipcMain.handle('win:isMaximized', () => {
