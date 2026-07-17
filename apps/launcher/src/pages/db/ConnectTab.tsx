@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { MysqlConfig } from '@rosever/shared/types';
 import { Icon } from '@/components/Icon';
 
@@ -15,6 +15,8 @@ export function ConnectTab({ cfg, setCfg, connected, onConnected }: Props) {
   const [test, setTest] = useState<TestState>({ status: 'idle' });
   const [initing, setIniting] = useState(false);
   const [initResult, setInitResult] = useState<{ steps: { ok: boolean; file: string; error?: string }[]; createError?: string } | null>(null);
+  // 库是否已初始化（存在且有表）→ 禁用初始化按钮防误触
+  const [dbState, setDbState] = useState<{ checking: boolean; initialized: boolean; tableCount: number }>({ checking: false, initialized: false, tableCount: 0 });
 
   const handleTest = async () => {
     setTest({ status: 'testing' });
@@ -23,12 +25,27 @@ export function ConnectTab({ cfg, setCfg, connected, onConnected }: Props) {
     onConnected(res.ok);
   };
 
+  // 检查 conf 配置的库是否已初始化（cfg 变化时重新检查）
+  const checkInit = useCallback(async () => {
+    setDbState({ checking: true, initialized: false, tableCount: 0 });
+    const res = await window.rosever.checkDbInitialized(cfg);
+    setDbState({ checking: false, initialized: res.exists, tableCount: res.tableCount });
+  }, [cfg]);
+
+  useEffect(() => {
+    checkInit();
+  }, [checkInit]);
+
   const handleInit = async () => {
     setIniting(true);
     setInitResult(null);
     const res = await window.rosever.initializeDb(cfg);
     setIniting(false);
     setInitResult(res);
+    // 初始化后重新检查状态
+    if (res.steps.length > 0 && res.steps.every((s) => s.ok)) {
+      checkInit();
+    }
   };
 
   return (
@@ -78,17 +95,31 @@ export function ConnectTab({ cfg, setCfg, connected, onConnected }: Props) {
           一键初始化数据库
         </h3>
         <p className="text-xs text-text-secondary mb-3">
-          创建数据库 <code className="text-text-primary">{cfg.database}</code> 并导入以下文件：
+          创建数据库 <code className="text-text-primary">{cfg.database}</code>（读取自 conf）并导入以下文件：
         </p>
         <ul className="text-xs text-text-muted font-mono mb-4 space-y-1">
           <li>· sql-files/main.sql（主数据表）</li>
           <li>· sql-files/logs.sql（日志表）</li>
           <li>· sql-files/roulette_default_data.sql（轮盘默认数据）</li>
         </ul>
-        <button className="btn-primary" onClick={handleInit} disabled={initing}>
-          <Icon.Play size={14} />
-          {initing ? '初始化中…' : '开始初始化'}
-        </button>
+        {dbState.checking ? (
+          <span className="text-xs text-text-muted">检查数据库状态中…</span>
+        ) : dbState.initialized ? (
+          <div className="flex items-center gap-2">
+            <button className="btn-primary opacity-50 cursor-not-allowed" disabled title="数据库已存在且含表，防止误触覆盖">
+              <Icon.Check size={14} />
+              已初始化
+            </button>
+            <span className="text-xs text-status-running">
+              数据库 <code className="text-text-primary">{cfg.database}</code> 已存在（{dbState.tableCount} 张表），无需重复初始化
+            </span>
+          </div>
+        ) : (
+          <button className="btn-primary" onClick={handleInit} disabled={initing}>
+            <Icon.Play size={14} />
+            {initing ? '初始化中…' : '开始初始化'}
+          </button>
+        )}
         {initResult && (
           <div className="mt-4 space-y-1.5">
             {initResult.createError && <div className="text-xs text-status-crashed">建库失败: {initResult.createError}</div>}

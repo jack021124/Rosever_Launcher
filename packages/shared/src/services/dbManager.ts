@@ -155,6 +155,39 @@ export class DbManager {
     return { steps };
   }
 
+  /**
+   * 检查 conf 里配置的库是否已存在（且非空）。
+   * 用于「一键初始化」按钮的禁用判断：如果库已存在且有表，
+   * 说明已经初始化过，禁用按钮防止用户误触覆盖。
+   * @returns { exists, tableCount } exists=true 表示库已初始化
+   */
+  async checkDatabaseInitialized(cfg: MysqlConfig): Promise<{ exists: boolean; tableCount: number; error?: string }> {
+    try {
+      // 先连服务器（不带库名）检查库是否存在
+      const { database, ...serverOnly } = cfg;
+      const conn = await createConnection({ ...serverOnly });
+      const [dbRows] = await conn.query(
+        'SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+        [database],
+      );
+      const dbExists = (dbRows as { SCHEMA_NAME: string }[]).length > 0;
+      if (!dbExists) {
+        await conn.end();
+        return { exists: false, tableCount: 0 };
+      }
+      // 库存在，查表数量（有表 = 已初始化）
+      const [tblRows] = await conn.query(
+        'SELECT COUNT(*) AS cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = ?',
+        [database],
+      );
+      const tableCount = (tblRows as { cnt: number }[])[0]?.cnt ?? 0;
+      await conn.end();
+      return { exists: tableCount > 0, tableCount };
+    } catch (err) {
+      return { exists: false, tableCount: 0, error: err instanceof Error ? err.message : String(err) };
+    }
+  }
+
   /** 获取连接（带库） */
   async connect(cfg: MysqlConfig): Promise<Connection> {
     return createConnection({

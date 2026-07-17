@@ -637,6 +637,9 @@ ipcMain.handle('db:test', routed('db:test', async (cfg: MysqlConfig) => getDbMan
 /** 一键初始化（建库 + 导入核心 sql） */
 ipcMain.handle('db:initialize', routed('db:initialize', async (cfg: MysqlConfig) => getDbManager().initialize(cfg)));
 
+/** 检查 conf 配置的库是否已初始化（库存在且有表） */
+ipcMain.handle('db:checkInitialized', routed('db:checkInitialized', async (cfg: MysqlConfig) => getDbManager().checkDatabaseInitialized(cfg)));
+
 /** 数据表列表 */
 ipcMain.handle('db:listTables', routed('db:listTables', async (cfg: MysqlConfig) => {
   try {

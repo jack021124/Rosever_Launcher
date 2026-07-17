@@ -108,6 +108,9 @@ const api = {
       steps: { ok: boolean; file: string; error?: string }[];
       createError?: string;
     }>,
+  /** 检查 conf 配置的库是否已初始化（库存在且有表） */
+  checkDbInitialized: (cfg: MysqlConfig) =>
+    ipcRenderer.invoke('db:checkInitialized', cfg) as Promise<{ exists: boolean; tableCount: number; error?: string }>,
   listTables: (cfg: MysqlConfig) =>
     ipcRenderer.invoke('db:listTables', cfg) as Promise<
       { ok: true; tables: { name: string; rows: number; sizeMB: number }[] } | { ok: false; error: string }
