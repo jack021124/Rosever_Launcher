@@ -9,7 +9,9 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit",
-    "package": "electron-vite build && electron-builder --win portable --x64"
+    "package": "electron-vite build && electron-builder --win portable --x64",
+    "screenshot": "cross-env CAPTURE_SCREENS=1 electron-vite dev",
+    "screenshot:build": "cross-env CAPTURE_SCREENS=1 electron-vite preview"
   },
   "build": {
     "appId": "com.rosever.launcher",
@@ -26,7 +28,9 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -50,6 +54,7 @@
     "@types/ws": "^8.5.12",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.10",
+    "cross-env": "^7.0.3",
     "electron": "31.7.7",
     "electron-builder": "^26.15.3",
     "electron-vite": "^2.3.0",

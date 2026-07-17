@@ -10,6 +10,13 @@ import WebSocket from 'ws';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// ---- 截图模式（环境变量 CAPTURE_SCREENS=1 触发）----
+// 详见 scripts/captureScreens.mjs 顶部注释。该模式下：
+//   - 窗口保持隐藏后台截图（show:false 不改）
+//   - 跳过关闭确认对话框
+//   - SERVER_ROOT 环境变量可覆盖 config.json 里的服务端目录（避免污染真实配置）
+const CAPTURE_MODE = !!process.env['CAPTURE_SCREENS'];
+
 // ---- 配置持久化（serverRoot 等存在用户数据目录） ----
 
 interface LauncherConfig {
@@ -42,12 +49,19 @@ function loadConfig(): LauncherConfig {
         backupSchedule: { ...defaultBackupSchedule(), ...(raw.backupSchedule ?? {}) },
         logBackupSchedule: { ...defaultBackupSchedule(), ...(raw.logBackupSchedule ?? {}) },
       };
+      // 截图模式：SERVER_ROOT 覆盖（不写回 config.json，仅本次进程生效）
+      if (CAPTURE_MODE && process.env['SERVER_ROOT']) {
+        cachedConfig.serverRoot = process.env['SERVER_ROOT'];
+      }
       return cachedConfig;
     }
   } catch {
     /* 忽略损坏的配置 */
   }
   cachedConfig = { serverRoot: '', backupSchedule: defaultBackupSchedule(), logBackupSchedule: defaultBackupSchedule() };
+  if (CAPTURE_MODE && process.env['SERVER_ROOT']) {
+    cachedConfig.serverRoot = process.env['SERVER_ROOT'];
+  }
   return cachedConfig;
 }
 
@@ -373,8 +387,9 @@ function createWindow(): void {
   // 拦截关闭（Alt+F4 / 任务栏右键关闭等），询问用户确认。
   // win:close IPC（自定义标题栏按钮）会设 skipCloseConfirm 后再 close()，
   // 避免重复弹框。
+  // 截图模式跳过此对话框（截完直接 quit）。
   mainWindow.on('close', async (e) => {
-    if (mainWindow.__skipCloseConfirm) return;
+    if (CAPTURE_MODE || mainWindow.__skipCloseConfirm) return;
     e.preventDefault();
     const res = await dialog.showMessageBox(mainWindow, {
       type: 'warning',
@@ -403,10 +418,34 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // 去掉 Electron 默认原生菜单栏（文件/编辑/视图/帮助等）—— 对 RO 启动器无意义，
   // 且 DevTools 入口会暴露 IPC 调用，故直接置空 + 隐藏。
   Menu.setApplicationMenu(null);
+
+  // 截图模式：复用 createWindow（preload 路径 / IPC 全部正确），窗口加载完后截图
+  if (CAPTURE_MODE) {
+    // @ts-expect-error .mjs 模块无类型声明
+    const { captureScreens } = (await import('../scripts/captureScreens.mjs')) as {
+      captureScreens: (win: BrowserWindow) => Promise<unknown>;
+    };
+    // 临时把 createWindow 拦下来：窗口保持隐藏，加载完后跑截图
+    createWindow();
+    const captureWin = BrowserWindow.getAllWindows()[0] as BrowserWindow & { __skipCloseConfirm?: boolean };
+    captureWin.__skipCloseConfirm = true; // 截完直接 quit，跳过关闭确认
+    captureWin.webContents.on('did-finish-load', async () => {
+      try {
+        await captureScreens(captureWin);
+      } catch (err) {
+        console.error('[capture] 截图流程出错:', err);
+      } finally {
+        captureWin.destroy();
+        app.quit();
+      }
+    });
+    return;
+  }
+
   createWindow();
   // 启动数据库自动备份调度器（若已启用）
   const initCfg = loadConfig();
