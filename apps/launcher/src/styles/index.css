@@ -26,7 +26,36 @@
   --status-warning: 251 191 36;
   --border: 54 54 80;
   --border-strong: 74 74 106;
+  /* 阴影/卡片交互辅助色（美化层用，深色默认） */
+  --shadow: 0 0 0;
+  --border-subtle: 30 30 46;
+  --card-hover: 45 45 64;
   --ce-text: 232 232 240;
+  /* 代码高亮色（深色默认；CodeMirror 高亮样式引用这些变量） */
+  --ce-key: 199 146 234;
+  --ce-colon: 154 154 181;
+  --ce-number: 130 170 255;
+  --ce-bool: 195 232 141;
+  --ce-string: 195 232 141;
+  --ce-comment: 150 150 176;
+  --ce-sep: 106 106 138;
+  --ce-import: 247 140 108;
+}
+
+/* 浅色主题下的代码高亮色（applyTheme 会在 <html> 上写 data-theme="light"） */
+:root[data-theme='light'] {
+  --ce-key: 138 43 226;
+  --ce-colon: 120 120 140;
+  --ce-number: 40 80 200;
+  --ce-bool: 40 130 50;
+  --ce-string: 40 130 50;
+  --ce-comment: 130 130 150;
+  --ce-sep: 180 180 195;
+  --ce-import: 200 90 30;
+  /* 浅色主题阴影偏蓝灰 */
+  --shadow: 30 30 50;
+  --border-subtle: 230 230 240;
+  --card-hover: 240 240 250;
 }
 
 @layer base {
@@ -49,6 +78,8 @@
 
   body {
     @apply bg-bg-base text-text-primary font-sans antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
     /* 禁用文本选择，桌面应用风格 */
     -webkit-user-select: none;
     user-select: none;
@@ -64,7 +95,7 @@
     user-select: text;
   }
 
-  /* 滚动条 */
+  /* 滚动条 —— 柔和细窄 */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -73,78 +104,144 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-border-strong rounded;
+    @apply bg-border-strong rounded-full;
   }
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-accent-dim;
   }
+  /* Firefox：细滚动条 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--border-strong)) transparent;
+  }
 }
 
 @layer components {
-  /* 通用按钮 */
+  /* ============================================
+     按钮 —— 轻微按压反馈 + 柔和过渡
+     ============================================ */
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium
-           transition-colors duration-150 cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed;
+           transition-all duration-150 ease-out-soft cursor-pointer select-none
+           active:scale-[0.97]
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
   }
   .btn-primary {
-    @apply btn bg-accent text-white hover:bg-accent-hover;
+    @apply btn bg-accent text-white shadow-sm hover:bg-accent-hover;
   }
   .btn-ghost {
     @apply btn bg-transparent text-text-secondary hover:bg-bg-hover hover:text-text-primary;
   }
   .btn-outline {
-    @apply btn border border-border text-text-primary hover:bg-bg-hover;
+    @apply btn border border-border text-text-primary hover:bg-bg-hover hover:border-border-strong;
   }
 
-  /* 输入框 */
+  /* ============================================
+     输入框 —— 柔光环 focus（替代生硬的 ring）
+     ============================================ */
   .input {
     @apply bg-bg-input border border-border rounded px-3 py-1.5 text-sm text-text-primary
-           placeholder:text-text-muted outline-none transition-colors
-           focus:border-accent focus:ring-1 focus:ring-accent/40;
+           placeholder:text-text-muted outline-none transition-all duration-150
+           focus:border-accent;
+  }
+  .input:focus {
+    box-shadow: 0 0 0 3px rgb(var(--accent) / 0.12);
   }
 
-  /* 卡片 */
+  /* ============================================
+     卡片 —— 默认轻微阴影 + hover 浮起变体
+     ============================================ */
   .card {
-    @apply bg-bg-panel rounded border border-border;
+    @apply bg-bg-panel rounded border border-border shadow-sm transition-all duration-200 ease-out-soft;
+  }
+  /* 想要 hover 浮起效果时叠加 .card-hover */
+  .card-hover {
+    @apply hover:shadow-md hover:border-border-strong;
   }
 
   /* 页面标题区 */
   .page-header {
     @apply flex items-center justify-between pb-4 border-b border-border;
   }
+
+  /* ============================================
+     徽标 —— 统一状态标签（消除页面内重复内联样式）
+     ============================================ */
+  .badge {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium leading-none;
+  }
+  .badge-neutral {
+    @apply badge bg-bg-active/70 text-text-secondary;
+  }
+  .badge-running {
+    @apply badge bg-status-running/15 text-status-running;
+  }
+  .badge-warning {
+    @apply badge bg-status-warning/15 text-status-warning;
+  }
+  .badge-crashed {
+    @apply badge bg-status-crashed/15 text-status-crashed;
+  }
+  .badge-accent {
+    @apply badge bg-accent/15 text-accent;
+  }
+
+  /* ============================================
+     标签栏 —— Database 主标签复用
+     ============================================ */
+  .tab-bar {
+    @apply flex gap-1 border-b border-border;
+  }
+  .tab {
+    @apply px-3 py-2 text-sm text-text-secondary border-b-2 border-transparent -mb-px
+           transition-all duration-150 cursor-pointer hover:text-text-primary;
+  }
+  .tab-active {
+    @apply tab text-accent border-accent font-medium;
+  }
+
+  /* ============================================
+     分段控件 —— Logs 服务筛选 / Config 模式开关复用
+     ============================================ */
+  .seg {
+    @apply inline-flex items-center bg-bg-input rounded-md p-0.5 border border-border;
+  }
+  .seg-item {
+    @apply px-2.5 py-1 rounded text-xs text-text-secondary transition-all duration-150 cursor-pointer
+           hover:text-text-primary;
+  }
+  .seg-item-active {
+    @apply seg-item bg-accent text-white shadow-sm hover:text-white;
+  }
+
+  /* ============================================
+     表格行 hover —— db/TablesTab / AccountsTab 复用
+     ============================================ */
+  .table-row-hover {
+    @apply transition-colors duration-100 hover:bg-bg-hover/50;
+  }
+
+  /* ============================================
+     状态点 —— 运行态呼吸光晕
+     用法：<span className="status-dot bg-status-running" />
+     ============================================ */
+  .status-dot {
+    @apply inline-block w-2.5 h-2.5 rounded-full shrink-0;
+  }
+  .status-dot-glow {
+    box-shadow: 0 0 8px currentColor;
+  }
 }
 
 /* ============================================
-   CodeEditor —— conf 纯文本编辑器
-   直接用可见 textarea 显示文字（不再用 overlay 高亮方案，
-   避免 textarea/div 渲染偏差导致退格删错字符）。
+   CodeEditor —— conf 高亮编辑器（CodeMirror 6）
+   编辑器外观（字号/行距/光标/选区色）由组件内的 EditorView.theme
+   通过 --ce-* 变量设置；这里只保留容器兜底。
    ============================================ */
 .ce-wrap {
   box-sizing: border-box;
 }
-
-.ce-input {
-  font-family: var(--font-mono, 'Cascadia Code'), 'Consolas', monospace;
-  font-size: var(--ce-font-size, 12px);
-  line-height: var(--ce-line-height, 1.6);
-  padding: 12px;
-  border: 0;
-  margin: 0;
-  tab-size: 4;
-  letter-spacing: 0;
-  word-spacing: 0;
-  white-space: pre;
-  box-sizing: border-box;
-  color: rgb(var(--ce-text));
-  caret-color: rgb(var(--accent));
-  background: transparent;
-  resize: none;
-  overflow: auto;
-}
-.ce-input::placeholder {
-  color: rgb(var(--text-muted));
-}
-.ce-input::selection {
-  background: rgb(var(--accent) / 0.3);
+.ce-wrap .cm-editor {
+  height: 100%;
 }
 

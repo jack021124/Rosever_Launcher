@@ -273,6 +273,9 @@ export interface CustomSettings {
   ceFontSize: number | null;
   /** 代码行高，null = 默认 1.6 */
   ceLineHeight: number | null;
+  /** 高亮颜色覆盖（key = '--ce-key' 等，value = 'r g b'）。
+   *  空对象 = 用 index.css 里深/浅两套默认高亮配色 */
+  highlight: Record<string, string>;
 }
 
 export function defaultCustomSettings(): CustomSettings {
@@ -282,5 +285,6 @@ export function defaultCustomSettings(): CustomSettings {
     fontSizeBase: null,
     ceFontSize: null,
     ceLineHeight: null,
+    highlight: {},
   };
 }

@@ -33,9 +33,21 @@ const CUSTOM_STORAGE_KEY = 'rosever.custom';
 
 export type Theme = string; // 主题 id（见 themes.ts 的 THEMES）
 
+/** 代码高亮 token 变量（默认值在 index.css 深/浅两套，inline 只写用户自定义） */
+const CE_TOKEN_KEYS = [
+  '--ce-key',
+  '--ce-colon',
+  '--ce-number',
+  '--ce-bool',
+  '--ce-string',
+  '--ce-comment',
+  '--ce-sep',
+  '--ce-import',
+];
+
 /**
  * 把主题 + 自定义叠加应用到 DOM。
- * 顺序：先写主题的 colors + 对应 mode 的高亮，再写字体默认值，最后叠加用户自定义覆盖。
+ * 顺序：先写主题的 colors + 对应 mode 的文字色，再写字体默认值，最后叠加用户自定义覆盖。
  * 自定义字段为 null 时跳过（用主题/默认值），非 null 则覆盖。
  */
 function applyTheme(themeId: string, custom?: CustomSettings): void {
@@ -64,6 +76,15 @@ function applyTheme(themeId: string, custom?: CustomSettings): void {
     if (custom.fontSizeBase != null) all['--font-size-base'] = `${custom.fontSizeBase}px`;
     if (custom.ceFontSize != null) all['--ce-font-size'] = `${custom.ceFontSize}px`;
     if (custom.ceLineHeight != null) all['--ce-line-height'] = String(custom.ceLineHeight);
+    Object.assign(all, custom.highlight);
+  }
+
+  // 高亮 token 默认值走样式表（index.css 按 data-theme 分深/浅），inline 只写自定义。
+  // 先清掉上一轮写过的自定义，避免单项重置/全部重置后旧值残留在 inline style 上。
+  for (const k of CE_TOKEN_KEYS) {
+    if (!custom?.highlight || !(k in custom.highlight)) {
+      root.style.removeProperty(k);
+    }
   }
 
   for (const [k, v] of Object.entries(all)) {
