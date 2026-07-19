@@ -225,11 +225,11 @@ export function NpcScripts() {
         {/* 新建 conf 弹层 */}
         {creating && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             onClick={() => setCreating(false)}
           >
             <div
-              className="card p-5 w-80 shadow-xl"
+              className="card p-5 w-80 shadow-lg rounded-xl animate-slide-up"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-sm font-semibold mb-1">新建 conf 文件</h3>

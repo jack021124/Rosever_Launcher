@@ -39,14 +39,20 @@ export function Database() {
       title="数据库"
       subtitle={connected ? `已连接 ${cfg.database}@${cfg.host}` : 'MySQL 数据库管理'}
       actions={
-        <span className={`flex items-center gap-1.5 text-xs ${connected ? 'text-status-running' : 'text-text-muted'}`}>
-          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-status-running' : 'bg-status-stopped'}`} />
+        <span
+          className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full ${
+            connected ? 'bg-status-running/10 text-status-running' : 'bg-bg-active/60 text-text-muted'
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${connected ? 'bg-status-running status-dot-glow' : 'bg-status-stopped'}`}
+          />
           {connected ? '已连接' : '未连接'}
         </span>
       }
     >
       {/* Tab 栏 */}
-      <div className="flex items-center gap-1 mb-4 border-b border-border">
+      <div className="tab-bar mb-4">
         {TABS.map((t) => {
           const I = Icon[t.icon];
           const disabled = t.id !== 'connect' && !connected;
@@ -55,9 +61,9 @@ export function Database() {
               key={t.id}
               onClick={() => !disabled && setTab(t.id)}
               disabled={disabled}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors -mb-px ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 -mb-px transition-all duration-150 ${
                 tab === t.id
-                  ? 'border-accent text-accent'
+                  ? 'border-accent text-accent font-medium'
                   : disabled
                     ? 'border-transparent text-text-muted cursor-not-allowed'
                     : 'border-transparent text-text-secondary hover:text-text-primary'

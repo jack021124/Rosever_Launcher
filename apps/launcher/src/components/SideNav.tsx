@@ -54,8 +54,8 @@ export function SideNav() {
     <aside className="w-52 shrink-0 bg-bg-panel border-r border-border flex flex-col">
       <nav className="flex-1 overflow-y-auto py-3">
         {GROUPS.map((group) => (
-          <div key={group.title} className="mb-1">
-            <div className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          <div key={group.title} className="mb-2">
+            <div className="px-4 py-1.5 text-[10px] font-semibold uppercase text-text-muted/70 tracking-[0.1em]">
               {group.title}
             </div>
             {group.items.map((item) => {
@@ -66,15 +66,25 @@ export function SideNav() {
                   to={item.to}
                   end={item.to === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-2.5 mx-2 px-2.5 py-1.5 rounded text-sm transition-colors ${
+                    `group relative flex items-center gap-2.5 mx-2 px-2.5 py-1.5 rounded-md text-sm transition-all duration-150 ease-out-soft ${
                       isActive
-                        ? 'bg-accent/20 text-accent border-l-2 border-accent'
-                        : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary border-l-2 border-transparent'
+                        ? 'bg-accent/15 text-accent font-medium shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.2)]'
+                        : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary hover:translate-x-0.5'
                     }`
                   }
                 >
-                  <I size={15} />
-                  <span>{item.label}</span>
+                  {({ isActive }) => (
+                    <>
+                      {/* 激活态左侧小药丸指示器（垂直居中） */}
+                      <span
+                        className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-accent transition-opacity duration-150 ${
+                          isActive ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                      <I size={15} className={isActive ? 'text-accent' : 'text-text-muted group-hover:text-current'} />
+                      <span>{item.label}</span>
+                    </>
+                  )}
                 </NavLink>
               );
             })}
@@ -88,11 +98,14 @@ export function SideNav() {
         className="text-left p-3 border-t border-border text-[11px] text-text-muted hover:bg-bg-hover transition-colors"
         title="点击重新选择服务端目录"
       >
-        <div className="flex items-center gap-1 mb-0.5">
+        <div className="flex items-center gap-1 mb-1">
           <Icon.Folder size={12} />
           <span>服务端目录</span>
         </div>
-        <div className="truncate text-text-secondary font-mono text-[10px]" title={serverRoot}>
+        <div
+          className="truncate text-text-secondary font-mono text-[10px] bg-bg-input/50 rounded px-1.5 py-0.5"
+          title={serverRoot}
+        >
           {serverRoot || '未配置'}
         </div>
       </button>

@@ -13,12 +13,21 @@ const STATE_LABEL: Record<RunState, string> = {
   stopping: '停止中',
   crashed: '已崩溃',
 };
+// 状态点：stopped 静态灰、running 绿色呼吸光晕、starting/stopping 橙色 pulse、crashed 红色
 const STATE_DOT: Record<RunState, string> = {
   stopped: 'bg-status-stopped',
   starting: 'bg-status-warning animate-pulse',
-  running: 'bg-status-running',
+  running: 'bg-status-running animate-pulse-soft status-dot-glow text-status-running',
   stopping: 'bg-status-warning animate-pulse',
   crashed: 'bg-status-crashed',
+};
+// 状态徽标（服务名右侧小标签）
+const STATE_BADGE: Record<RunState, string> = {
+  stopped: 'badge-neutral',
+  starting: 'badge-warning',
+  running: 'badge-running',
+  stopping: 'badge-warning',
+  crashed: 'badge-crashed',
 };
 
 export function ServiceControl() {
@@ -135,27 +144,25 @@ export function ServiceControl() {
           const busy = st.state === 'starting' || st.state === 'stopping';
           const port = ports[meta.id] ?? meta.port;
           return (
-            <div key={meta.id} className="card overflow-hidden">
-              <div className="flex items-center justify-between gap-4 p-3">
+            <div key={meta.id} className="card card-hover overflow-hidden">
+              <div className="flex items-center justify-between gap-4 p-3.5">
                 {/* 左：状态 + 名称 */}
                 <div className="flex items-center gap-3 min-w-0 flex-1 text-left">
-                  <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${STATE_DOT[st.state]}`} />
+                  <span className={`status-dot ${STATE_DOT[st.state]}`} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{meta.name}</span>
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-bg-active text-text-secondary">
-                        {STATE_LABEL[st.state]}
-                      </span>
+                      <span className={STATE_BADGE[st.state]}>{STATE_LABEL[st.state]}</span>
                       {st.restartCount > 0 && (
                         <span className="text-[11px] text-status-warning" title="崩溃自动重启次数">
                           ↻ {st.restartCount}
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-text-muted mt-0.5 flex items-center gap-3">
-                      <span className="font-mono">{meta.exe}</span>
-                      <span>:{port}</span>
-                      {st.pid && <span>pid {st.pid}</span>}
+                    <div className="text-xs text-text-muted mt-0.5 flex items-center gap-2.5">
+                      <span className="font-mono text-text-secondary">{meta.exe}</span>
+                      <span className="badge-neutral font-mono !text-[10px]">:{port}</span>
+                      {st.pid && <span className="text-text-muted">pid {st.pid}</span>}
                       {st.lastError && <span className="text-status-crashed truncate">{st.lastError}</span>}
                     </div>
                   </div>
@@ -175,7 +182,7 @@ export function ServiceControl() {
                   )}
                   {running ? (
                     <button
-                      className="btn-outline border-status-crashed/50 text-status-crashed hover:bg-status-crashed/10 !py-1"
+                      className="btn-outline border-status-crashed/50 text-status-crashed hover:bg-status-crashed/10 hover:border-status-crashed/70 !py-1"
                       onClick={() => window.rosever.stop(meta.id as ServiceId)}
                       disabled={busy}
                     >
@@ -227,16 +234,27 @@ function SummaryCard({
   const I = Icon[icon];
   const accentColor =
     accent === 'running' ? 'text-status-running' : accent === 'crashed' ? 'text-status-crashed' : 'text-text-primary';
+  const tileTint =
+    accent === 'running'
+      ? 'bg-status-running/10 text-status-running'
+      : accent === 'crashed'
+        ? 'bg-status-crashed/10 text-status-crashed'
+        : 'bg-accent/10 text-accent';
   return (
-    <div className="card p-3">
-      <div className="flex items-center gap-1.5 text-[11px] text-text-muted mb-1">
-        <I size={12} />
-        {label}
+    <div className="card card-hover p-4">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className={`w-7 h-7 rounded-md flex items-center justify-center ${tileTint}`}>
+          <I size={14} />
+        </span>
+        <span className="text-[11px] text-text-muted">{label}</span>
       </div>
-      <div className={`text-lg font-semibold ${accentColor} ${mono ? 'font-mono truncate' : ''}`} title={sub ?? value}>
+      <div
+        className={`text-xl font-semibold tabular-nums ${accentColor} ${mono ? 'font-mono truncate' : ''}`}
+        title={sub ?? value}
+      >
         {value}
       </div>
-      {sub && <div className="text-[10px] text-text-muted truncate font-mono" title={sub}>{sub}</div>}
+      {sub && <div className="text-[10px] text-text-muted truncate font-mono mt-0.5" title={sub}>{sub}</div>}
     </div>
   );
 }

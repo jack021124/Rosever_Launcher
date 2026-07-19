@@ -16,6 +16,17 @@ const LEVEL_COLOR: Record<LogLevel, string> = {
   sql: 'text-purple-400',
   cli: 'text-cyan-400',
 };
+// 警告/错误行给个淡背景，扫一眼就能定位异常
+const LEVEL_ROW_BG: Record<LogLevel, string> = {
+  status: '',
+  info: '',
+  notice: '',
+  warning: 'bg-status-warning/[0.06]',
+  error: 'bg-status-crashed/[0.08]',
+  debug: '',
+  sql: '',
+  cli: '',
+};
 
 const SERVICE_FILTERS: { id: ServiceId; label: string }[] = SERVICES.map((s) => ({
   id: s.id as ServiceId,
@@ -60,14 +71,12 @@ export function Logs() {
     >
       {/* 工具栏 */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <div className="flex items-center gap-1 bg-bg-panel rounded p-0.5 border border-border">
+        <div className="seg">
           {SERVICE_FILTERS.map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
-                filter === f.id ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
-              }`}
+              className={filter === f.id ? 'seg-item-active' : 'seg-item'}
             >
               {f.label}
             </button>
@@ -107,14 +116,15 @@ export function Logs() {
           </div>
         ) : (
           filtered.map((l, i) => (
-            <div key={i} className="flex gap-2 px-1 py-0.5 hover:bg-bg-hover/40 rounded">
+            <div
+              key={i}
+              className={`flex gap-2 px-1.5 py-0.5 rounded transition-colors duration-100 ${LEVEL_ROW_BG[l.level]} hover:bg-bg-hover/50`}
+            >
               <span className="text-text-muted shrink-0 tabular-nums">
                 {new Date(l.ts).toLocaleTimeString('zh-CN', { hour12: false })}
               </span>
               <span className="text-accent-dim shrink-0 w-14">{l.service}</span>
-              <span className={`shrink-0 w-16 font-semibold ${LEVEL_COLOR[l.level]}`}>
-                [{l.level}]
-              </span>
+              <span className={`shrink-0 w-16 font-semibold ${LEVEL_COLOR[l.level]}`}>[{l.level}]</span>
               <span className={`break-all ${LEVEL_COLOR[l.level]}`}>{l.text}</span>
             </div>
           ))

@@ -87,10 +87,10 @@ export function TablesTab({ cfg }: { cfg: MysqlConfig }) {
             <div className="p-6 text-center text-text-muted text-sm">加载中…</div>
           ) : data && data.rows.length > 0 ? (
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-bg-panel">
+              <thead className="sticky top-0 bg-bg-panel/95 backdrop-blur-sm z-10">
                 <tr>
                   {data.columns.map((c) => (
-                    <th key={c} className="text-left px-2 py-1.5 font-medium text-text-secondary border-b border-border whitespace-nowrap">
+                    <th key={c} className="text-left px-3 py-2 font-medium text-text-secondary border-b border-border whitespace-nowrap">
                       {c}
                     </th>
                   ))}
@@ -98,9 +98,9 @@ export function TablesTab({ cfg }: { cfg: MysqlConfig }) {
               </thead>
               <tbody>
                 {data.rows.map((row, i) => (
-                  <tr key={i} className="hover:bg-bg-hover/40">
+                  <tr key={i} className="table-row-hover">
                     {row.map((cell, j) => (
-                      <td key={j} className="px-2 py-1 border-b border-border/30 text-text-secondary font-mono max-w-[200px] truncate" title={cell}>
+                      <td key={j} className="px-3 py-1.5 border-b border-border/30 text-text-secondary font-mono max-w-[240px] truncate" title={cell}>
                         {cell}
                       </td>
                     ))}

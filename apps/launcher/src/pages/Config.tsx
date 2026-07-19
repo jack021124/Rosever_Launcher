@@ -132,21 +132,19 @@ export function Config() {
       actions={
         <>
           {/* 模式开关 */}
-          <div className="flex items-center rounded bg-bg-active p-0.5 text-[11px]" title={canSafe ? '' : '该文件不支持安全覆盖'}>
+          <div className="seg text-[11px]" title={canSafe ? '' : '该文件不支持安全覆盖'}>
             <button
               onClick={() => handleModeChange('direct')}
-              className={`px-2 py-1 rounded transition-colors ${
-                effectiveMode === 'direct' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
-              }`}
+              className={effectiveMode === 'direct' ? 'seg-item-active' : 'seg-item'}
             >
               直接修改
             </button>
             <button
               onClick={() => canSafe && handleModeChange('safe')}
               disabled={!canSafe}
-              className={`px-2 py-1 rounded transition-colors ${
-                effectiveMode === 'safe' ? 'bg-accent text-white' : 'text-text-secondary hover:text-text-primary'
-              } ${!canSafe ? 'opacity-40 cursor-not-allowed' : ''}`}
+              className={`seg-item ${effectiveMode === 'safe' ? 'seg-item-active' : ''} ${
+                !canSafe ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
             >
               安全覆盖
             </button>

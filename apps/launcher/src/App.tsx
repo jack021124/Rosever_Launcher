@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { TitleBar } from '@/components/TitleBar';
 import { TargetSwitcher } from '@/components/TargetSwitcher';
 import { SideNav } from '@/components/SideNav';
@@ -47,6 +47,7 @@ export default function App() {
 
   // 远程模式下放行 routes（无需本地 serverRoot）；本地模式仍要求配置好目录
   const ready = serverRootReady || isRemote;
+  const location = useLocation();
 
   return (
     <div className="h-full flex flex-col">
@@ -55,19 +56,27 @@ export default function App() {
       <TargetSwitcher />
       <div className="flex-1 flex overflow-hidden">
         <SideNav />
-        <main className="flex-1 min-h-0 overflow-hidden bg-bg-base">
+        <main
+          className="flex-1 min-h-0 overflow-hidden bg-bg-base"
+          style={{
+            backgroundImage:
+              'radial-gradient(ellipse 80% 50% at 50% 0%, rgb(var(--bg-panel) / 0.5), transparent 70%)',
+          }}
+        >
           {ready ? (
-            <Routes>
-              <Route path="/" element={<ServiceControl />} />
-              <Route path="/config" element={<Config />} />
-              <Route path="/npc" element={<NpcScripts />} />
-              <Route path="/database" element={<Database />} />
-              <Route path="/logs" element={<Logs />} />
-              <Route path="/servers" element={<Servers />} />
-              <Route path="/tools/data" element={<DataTools />} />
-              <Route path="/tools/map" element={<MapTools />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
+            <div key={location.pathname} className="h-full animate-fade-in">
+              <Routes location={location}>
+                <Route path="/" element={<ServiceControl />} />
+                <Route path="/config" element={<Config />} />
+                <Route path="/npc" element={<NpcScripts />} />
+                <Route path="/database" element={<Database />} />
+                <Route path="/logs" element={<Logs />} />
+                <Route path="/servers" element={<Servers />} />
+                <Route path="/tools/data" element={<DataTools />} />
+                <Route path="/tools/map" element={<MapTools />} />
+                <Route path="/settings" element={<Settings />} />
+              </Routes>
+            </div>
           ) : (
             <SetupGuide />
           )}

@@ -99,7 +99,7 @@ export function AccountsTab({ cfg }: { cfg: MysqlConfig }) {
               </thead>
               <tbody>
                 {accounts.map((a) => (
-                  <tr key={a.account_id} className={`hover:bg-bg-hover/40 ${detailAcc?.account_id === a.account_id ? 'bg-accent/10' : ''}`}>
+                  <tr key={a.account_id} className={`table-row-hover ${detailAcc?.account_id === a.account_id ? 'bg-accent/10' : ''}`}>
                     <td className="px-2 py-1 font-mono text-text-muted">{a.account_id}</td>
                     <td className="px-2 py-1 text-text-primary">{a.userid}</td>
                     <td className="px-2 py-1">{a.sex}</td>
@@ -285,8 +285,8 @@ function CreateAccountModal({ cfg, onClose, onCreated }: { cfg: MysqlConfig; onC
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="card p-5 w-80" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50" onClick={onClose}>
+      <div className="card p-5 w-80 shadow-lg rounded-xl animate-slide-up" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-sm font-semibold mb-4">注册新账号</h3>
         <div className="space-y-3">
           <label className="block"><span className="text-[11px] text-text-muted block mb-1">账号 (userid)</span>

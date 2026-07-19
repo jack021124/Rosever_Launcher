@@ -37,20 +37,29 @@ export function TitleBar() {
     >
       {/* 左侧：logo + 名称 */}
       <div className="flex items-center gap-2">
-        <img src={appIcon} alt="渡鸦" className="w-5 h-5 rounded" draggable={false} />
-        <span className="text-xs font-semibold text-text-primary">渡鸦</span>
-        {version && <span className="text-[10px] text-text-muted ml-1">v{version}</span>}
+        <img
+          src={appIcon}
+          alt="渡鸦"
+          className="w-5 h-5 rounded ring-1 ring-border/50"
+          draggable={false}
+        />
+        <span className="text-xs font-semibold text-text-primary tracking-tight">渡鸦</span>
+        {version && (
+          <span className="px-1.5 py-0.5 rounded-full bg-bg-active/60 text-text-muted text-[10px] leading-none font-mono">
+            v{version}
+          </span>
+        )}
       </div>
 
       {/* 右侧：窗口控制按钮（不参与拖动） */}
       <div
-        className="flex items-center gap-1"
+        className="flex items-center gap-0.5"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       >
         {/* 最小化 */}
         <button
           onClick={() => window.rosever.winMinimize()}
-          className="w-7 h-6 flex items-center justify-center rounded text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+          className="w-7 h-6 flex items-center justify-center rounded-md text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-all duration-150 hover:scale-110 active:scale-95"
           title="最小化"
         >
           <svg width="11" height="11" viewBox="0 0 11 11">
@@ -60,7 +69,7 @@ export function TitleBar() {
         {/* 最大化/还原 */}
         <button
           onClick={handleMaximizeToggle}
-          className="w-7 h-6 flex items-center justify-center rounded text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-colors"
+          className="w-7 h-6 flex items-center justify-center rounded-md text-text-secondary hover:bg-bg-hover hover:text-text-primary transition-all duration-150 hover:scale-110 active:scale-95"
           title={maximized ? '还原' : '最大化'}
         >
           {maximized ? (
@@ -77,7 +86,7 @@ export function TitleBar() {
         {/* 关闭 */}
         <button
           onClick={() => window.rosever.winClose()}
-          className="w-7 h-6 flex items-center justify-center rounded text-text-secondary hover:bg-status-crashed hover:text-white transition-colors"
+          className="w-7 h-6 flex items-center justify-center rounded-md text-text-secondary hover:bg-status-crashed hover:text-white transition-all duration-150 hover:scale-110 active:scale-95"
           title="关闭"
         >
           <svg width="11" height="11" viewBox="0 0 11 11" stroke="currentColor" strokeWidth="1.2">
